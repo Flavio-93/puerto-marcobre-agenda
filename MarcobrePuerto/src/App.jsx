@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { 
   ShieldAlert, 
   Calendar, 
@@ -40,53 +41,10 @@ import {
   Trash2
 } from 'lucide-react';
 
-// --- MARCIBRE PUERTO ROSTER (INITIAL USERS WITH USERNAMES & PASSWORDS) ---
-const INITIAL_USERS = [
-  { id: 'usr-admin', username: 'fespinoza', password: '123', name: 'Flavio Espinoza', role: 'admin', guard: 'Todas', spec: 'Creador / Administrador App' },
-  { id: 'usr-super', username: 'fpaolillo', password: '123', name: 'Francisco Javier Paolillo Tapia', role: 'superintendente', guard: 'Todas', spec: 'Superintendente Operaciones Puerto' },
-  { id: 'usr-jefe', username: 'mcaceres', password: '123', name: 'Manuel Antonio Caceres Falconi', role: 'jefe', guard: 'Todas', spec: 'Jefe de Operaciones Puerto' },
-  { id: 'usr-a1', username: 'cnanfuñay', password: '123', name: 'Cronwel Vladimir Nanfuñay Lora', role: 'supervisor', guard: 'Guardia A', spec: 'Planta Servicios Ext.' },
-  { id: 'usr-a2', username: 'jhuaman', password: '123', name: 'Juan Carlos Huaman Quispe', role: 'supervisor', guard: 'Guardia A', spec: 'Descarga' },
-  { id: 'usr-b1', username: 'cmachuca', password: '123', name: 'Cesar Arnaldo Machuca Polo', role: 'supervisor', guard: 'Guardia B', spec: 'Planta Servicios Ext.' },
-  { id: 'usr-b2', username: 'ydiaz', password: '123', name: 'Yofre Díaz Guarderas', role: 'supervisor', guard: 'Guardia B', spec: 'Descarga' },
-  { id: 'usr-c1', username: 'jchambergo', password: '123', name: 'Jorge Marco Chambergo Vargas', role: 'supervisor', guard: 'Guardia C', spec: 'Planta Servicios Ext.' },
-  { id: 'usr-c2', username: 'vvacante', password: '123', name: '[Vacante Descarga]', role: 'supervisor', guard: 'Guardia C', spec: 'Descarga' },
-  { id: 'usr-d1', username: 'crudas', password: '123', name: 'Carlos Alberto Rudas Ramirez', role: 'supervisor', guard: 'Guardia D', spec: 'Planta Servicios Ext.' },
-  { id: 'usr-d2', username: 'wlopez', password: '123', name: 'William Jose Lopez Quiroz', role: 'supervisor', guard: 'Guardia D', spec: 'Descarga' },
-];
-
-const INITIAL_TASKS = [
-  {
-    id: 'task-1',
-    title: 'Reparación de cerradura de puerta de ingreso a Sala de Control Puerto',
-    description: 'La cerradura mecánica se trabó tras el último turno de descarga. Requiere cerrajero o cambio de pestillo.',
-    type: 'Mantenimiento / Instalaciones',
-    priority: 'Alta',
-    status: 'Pendiente',
-    assignedTo: 'Cesar Arnaldo Machuca Polo',
-    guard: 'Guardia B',
-    createdBy: 'Cesar Arnaldo Machuca Polo',
-    auditTrail: 'Creado por Cesar Arnaldo Machuca Polo (Supervisor - Guardia B)',
-    dueDate: '2026-10-28',
-    createdAt: '2026-10-26',
-    remindFrequency: 'Diaria'
-  },
-  {
-    id: 'task-2',
-    title: 'Reunión de coordinación con Mantenimiento por vibración en Bomba de Ácido #3',
-    description: 'Revisión técnica de sellos mecánicos con equipo de confiabilidad en Puerto.',
-    type: 'Reunión',
-    priority: 'Alta',
-    status: 'En Proceso',
-    assignedTo: 'General / Rotativo (Guardia B)',
-    guard: 'Guardia B',
-    createdBy: 'Manuel Antonio Caceres Falconi',
-    auditTrail: 'Creado y asignado por Manuel Antonio Caceres Falconi (Jefe de Operaciones Puerto)',
-    dueDate: '2026-10-27',
-    createdAt: '2026-10-25',
-    remindFrequency: '2 días antes'
-  }
-];
+// --- SUPABASE CLIENT CONFIGURATION ---
+const SUPABASE_URL = 'https://uaqfaqdbejdnonulozad.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_iDmuy5vGWPF1a6vqellmHw_Kha-2reP';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -98,14 +56,9 @@ export default function App() {
     }
   });
 
-  const [usersList, setUsersList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('marcobre_users_db');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
-    } catch {
-      return INITIAL_USERS;
-    }
-  });
+  const [usersList, setUsersList] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Start with null currentUser to enforce strict login
   const [currentUser, setCurrentUser] = useState(() => {
@@ -113,34 +66,102 @@ export default function App() {
       const saved = localStorage.getItem('marcobre_user_session');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const found = usersList.find(u => u.username === parsed.username);
-        if (found) return found;
+        // We will match it once usersList loads from Supabase
+        return parsed;
       }
     } catch {}
     return null; 
   });
 
-  // Empty fields by default so login fields are completely blank
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(!currentUser);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isUsersManagementModalOpen, setIsUsersManagementModalOpen] = useState(false);
+
+  // --- FETCH DATA FROM SUPABASE ON START & SETUP REALTIME ---
+  useEffect(() => {
+    fetchDataFromCloud();
+
+    // Subscribe to real-time changes in Supabase
+    const tasksSubscription = supabase
+      .channel('public:tareas')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas' }, payload => {
+        fetchDataFromCloud();
+      })
+      .subscribe();
+
+    const usersSubscription = supabase
+      .channel('public:usuarios')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, payload => {
+        fetchDataFromCloud();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tasksSubscription);
+      supabase.removeChannel(usersSubscription);
+    };
+  }, []);
+
+  const fetchDataFromCloud = async () => {
+    try {
+      // Fetch Users
+      const { data: cloudUsers, error: errUsers } = await supabase.from('usuarios').select('*');
+      if (!errUsers && cloudUsers && cloudUsers.length > 0) {
+        setUsersList(cloudUsers);
+        // Restore active session object if exists
+        const savedSession = localStorage.getItem('marcobre_user_session');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          const found = cloudUsers.find(u => u.username === parsed.username);
+          if (found) setCurrentUser(found);
+        }
+      }
+
+      // Fetch Tasks
+      const { data: cloudTasks, error: errTasks } = await supabase.from('tareas').select('*');
+      if (!errTasks && cloudTasks) {
+        // Map snake_case database columns to frontend camelCase
+        const formattedTasks = cloudTasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          type: t.type,
+          priority: t.priority,
+          status: t.status,
+          assignedTo: t.assigned_to,
+          guard: t.guard,
+          createdBy: t.created_by,
+          auditTrail: t.audit_trail,
+          dueDate: t.due_date,
+          createdAt: t.created_at,
+          remindFrequency: t.remind_frequency
+        }));
+        setTasks(formattedTasks);
+      }
+    } catch (err) {
+      console.error('Error fetching from Supabase:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // If no user is authenticated after loading, open login modal
+  useEffect(() => {
+    if (!isLoading && !currentUser) {
+      setIsLoginModalOpen(true);
+    }
+  }, [isLoading, currentUser]);
 
   useEffect(() => {
     try {
       localStorage.setItem('marcobre_dark_mode', JSON.stringify(isDarkMode));
     } catch {}
   }, [isDarkMode]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('marcobre_users_db', JSON.stringify(usersList));
-    } catch {}
-  }, [usersList]);
 
   useEffect(() => {
     if (currentUser) {
@@ -152,7 +173,6 @@ export default function App() {
 
   const [regimeCycleDay, setRegimeCycleDay] = useState(4); 
   const [activeTab, setActiveTab] = useState('agenda');
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [taskFilter, setTaskFilter] = useState('mis-tareas');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -200,13 +220,22 @@ export default function App() {
     }));
   };
 
-  const handleUpdateUserPassword = (userId, newPass) => {
-    if (currentUser?.username !== 'fespinoza') {
+  // Update password in Supabase cloud
+  const handleUpdateUserPassword = async (userId, newPass) => {
+    if (currentUser?.username?.toLowerCase() !== 'fespinoza') {
       alert('Acceso denegado. Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
       return;
     }
-    const updated = usersList.map(u => u.id === userId ? { ...u, password: newPass } : u);
-    setUsersList(updated);
+    const { error } = await supabase
+      .from('usuarios')
+      .update({ password: newPass })
+      .eq('id', userId);
+
+    if (error) {
+      alert('Error al actualizar contraseña en la nube.');
+    } else {
+      fetchDataFromCloud();
+    }
   };
 
   const handleLogout = () => {
@@ -219,14 +248,19 @@ export default function App() {
     setIsLoginModalOpen(true);
   };
 
-  // Delete task restricted strictly to Admin (Flavio Espinoza) and Superintendente
-  const handleDeleteTask = (taskId) => {
-    if (!currentUser || (currentUser.username !== 'fespinoza' && currentUser.role !== 'superintendente')) {
+  // Delete task in Supabase cloud (Instant sync for everyone)
+  const handleDeleteTask = async (taskId) => {
+    if (!currentUser || (currentUser.username?.toLowerCase() !== 'fespinoza' && currentUser.role !== 'superintendente')) {
       alert('Acceso restringido. Solo el Administrador (Flavio Espinoza) y el Superintendente pueden eliminar eventos.');
       return;
     }
-    if (window.confirm('¿Está seguro de eliminar este registro de la agenda de forma permanente?')) {
-      setTasks(tasks.filter(t => t.id !== taskId));
+    if (window.confirm('¿Está seguro de eliminar este registro de la agenda de forma permanente para todo el puerto?')) {
+      const { error } = await supabase.from('tareas').delete().eq('id', taskId);
+      if (error) {
+        alert('Error al eliminar tarea en la nube.');
+      } else {
+        fetchDataFromCloud();
+      }
     }
   };
 
@@ -283,7 +317,8 @@ export default function App() {
     });
   }, [tasks, taskFilter, searchQuery, currentUser]);
 
-  const handleCreateTask = (e) => {
+  // Create task and insert into Supabase cloud
+  const handleCreateTask = async (e) => {
     e.preventDefault();
     if (!newTask.title || !currentUser) return;
 
@@ -307,32 +342,45 @@ export default function App() {
       auditText = `Creado por ${currentUser.name} (Supervisor - ${currentUser.guard})`;
     }
 
-    const createdObj = {
-      id: 'task-' + (tasks.length + 1),
-      ...newTask,
-      assignedTo: assigned,
+    const newId = 'task-' + Date.now();
+    const payload = {
+      id: newId,
+      title: newTask.title,
+      description: newTask.description,
+      type: newTask.type,
+      priority: newTask.priority,
+      status: newTask.status,
+      assigned_to: assigned,
       guard: currentUser.guard !== 'Todas' ? currentUser.guard : newTask.guard,
-      createdBy: currentUser.name,
-      auditTrail: auditText,
-      createdAt: new Date().toISOString().split('T')[0]
+      created_by: currentUser.name,
+      audit_trail: auditText,
+      due_date: newTask.dueDate,
+      created_at: new Date().toISOString().split('T')[0],
+      remind_frequency: newTask.remindFrequency
     };
 
-    setTasks([createdObj, ...tasks]);
-    setIsNewTaskModalOpen(false);
-    setNewTask({
-      title: '',
-      description: '',
-      type: 'Mantenimiento / Instalaciones',
-      priority: 'Media',
-      status: 'Pendiente',
-      assignedTo: currentUser.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo',
-      guard: currentUser.guard !== 'Todas' ? currentUser.guard : 'Guardia B',
-      dueDate: new Date().toISOString().split('T')[0],
-      remindFrequency: 'Diaria'
-    });
+    const { error } = await supabase.from('tareas').insert([payload]);
+    if (error) {
+      alert('Error al guardar la tarea en la nube.');
+    } else {
+      setIsNewTaskModalOpen(false);
+      setNewTask({
+        title: '',
+        description: '',
+        type: 'Mantenimiento / Instalaciones',
+        priority: 'Media',
+        status: 'Pendiente',
+        assignedTo: currentUser.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo',
+        guard: currentUser.guard !== 'Todas' ? currentUser.guard : 'Guardia B',
+        dueDate: new Date().toISOString().split('T')[0],
+        remindFrequency: 'Diaria'
+      });
+      fetchDataFromCloud();
+    }
   };
 
-  const handleUpdateTask = (e) => {
+  // Update task in Supabase cloud
+  const handleUpdateTask = async (e) => {
     e.preventDefault();
     if (!selectedTaskForEdit || !currentUser) return;
 
@@ -340,29 +388,55 @@ export default function App() {
       ? ` | Modificado por ${currentUser.name} (${currentUser.role === 'admin' ? 'Admin' : currentUser.role})`
       : ` | Actualizado por ${currentUser.name}`;
 
-    setTasks(tasks.map(t => {
-      if (t.id === selectedTaskForEdit.id) {
-        return {
-          ...selectedTaskForEdit,
-          auditTrail: t.auditTrail + auditAddition
-        };
-      }
-      return t;
-    }));
+    const newAudit = selectedTaskForEdit.auditTrail + auditAddition;
 
-    setIsEditTaskModalOpen(false);
-    setSelectedTaskForEdit(null);
+    const { error } = await supabase
+      .from('tareas')
+      .update({
+        title: selectedTaskForEdit.title,
+        description: selectedTaskForEdit.description,
+        type: selectedTaskForEdit.type,
+        priority: selectedTaskForEdit.priority,
+        status: selectedTaskForEdit.status,
+        assigned_to: selectedTaskForEdit.assignedTo,
+        guard: selectedTaskForEdit.guard,
+        due_date: selectedTaskForEdit.dueDate,
+        remind_frequency: selectedTaskForEdit.remindFrequency,
+        audit_trail: newAudit
+      })
+      .eq('id', selectedTaskForEdit.id);
+
+    if (error) {
+      alert('Error al actualizar la tarea en la nube.');
+    } else {
+      setIsEditTaskModalOpen(false);
+      setSelectedTaskForEdit(null);
+      fetchDataFromCloud();
+    }
   };
 
-  const toggleTaskStatus = (id) => {
-    setTasks(tasks.map(t => {
-      if (t.id === id) {
-        const nextStatus = t.status === 'Pendiente' ? 'En Proceso' : t.status === 'En Proceso' ? 'Completado' : 'Pendiente';
-        return { ...t, status: nextStatus };
-      }
-      return t;
-    }));
+  // Toggle status online
+  const toggleTaskStatus = async (id, currentStatus) => {
+    const nextStatus = currentStatus === 'Pendiente' ? 'En Proceso' : currentStatus === 'En Proceso' ? 'Completado' : 'Pendiente';
+    
+    const { error } = await supabase
+      .from('tareas')
+      .update({ status: nextStatus })
+      .eq('id', id);
+
+    if (!error) {
+      fetchDataFromCloud();
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-cyan-400 space-y-4">
+        <Ship className="w-12 h-12 animate-bounce" />
+        <p className="font-bold text-sm tracking-widest uppercase">Conectando con Marcobre Puerto Online...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
@@ -382,7 +456,7 @@ export default function App() {
           <div>
             <div className="flex items-center space-x-2">
               <h1 className={`font-extrabold text-sm lg:text-lg tracking-tight ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>
-                MARCOBRE &bull; PUERTO AGENDA VIVA
+                MARCOBRE &bull; PUERTO AGENDA VIVA (ONLINE)
               </h1>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold hidden sm:inline-block border ${
                 isDarkMode 
@@ -591,9 +665,9 @@ export default function App() {
                     </div>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       {currentUser.role === 'admin'
-                        ? 'Eres el administrador general (Flavio Espinoza). Controlas el directorio de credenciales y la eliminación de eventos.'
+                        ? 'Eres el administrador general (Flavio Espinoza). Controlas el directorio de credenciales en la nube y la eliminación de eventos.'
                         : currentUser.role === 'superintendente'
-                        ? 'Superintendente de Operaciones Puerto. Tienes privilegios para editar, reasignar y eliminar eventos de la agenda.'
+                        ? 'Superintendente de Operaciones Puerto. Tienes privilegios para editar, reasignar y eliminar eventos de la agenda en tiempo real.'
                         : currentUser.role === 'supervisor' 
                         ? `Registras pendientes para tu guardia (${currentUser.guard}).` 
                         : 'Tienes privilegios de Jefatura: puedes registrar, editar y reasignar tareas a cualquier supervisor del puerto.'}
@@ -754,7 +828,7 @@ export default function App() {
 
                       <div className="flex items-center justify-between">
                         <button
-                          onClick={() => toggleTaskStatus(task.id)}
+                          onClick={() => toggleTaskStatus(task.id, task.status)}
                           className={`text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 ${
                             task.status === 'Completado' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' :
                             task.status === 'En Proceso' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' :
@@ -820,7 +894,7 @@ export default function App() {
             }`}>
               <div>
                 <h2 className={`text-base sm:text-lg font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Historial de Trazabilidad y Asignaciones Puerto</h2>
-                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Registro detallado de qué jefatura, admin o superintendencia asignó las tareas y qué supervisores las registraron por guardia.</p>
+                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Registro detallado en tiempo real de qué jefatura, admin o superintendencia asignó las tareas y qué supervisores las registraron por guardia.</p>
               </div>
 
               <div className="space-y-3">
@@ -873,7 +947,7 @@ export default function App() {
       <footer className={`border-t py-4 px-6 text-center text-xs transition-colors duration-200 ${
         isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
       }`}>
-        MARCOBRE PUERTO &bull; Sistema de Tareas para Supervisores, Jefatura y Superintendencia &bull; Admin: Flavio Espinoza
+        MARCOBRE PUERTO &bull; Sistema Online en Tiempo Real &bull; Admin: Flavio Espinoza
       </footer>
 
       {/* MODAL: NOTIFICATIONS */}
@@ -943,7 +1017,7 @@ export default function App() {
             <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
               <div className="flex items-center space-x-2">
                 <Key className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
-                <h3 className="font-bold text-base">Directorio y Gestión de Credenciales (Administrador: Flavio Espinoza)</h3>
+                <h3 className="font-bold text-base">Directorio y Gestión de Credenciales en la Nube (Administrador: Flavio Espinoza)</h3>
               </div>
               <button onClick={() => setIsUsersManagementModalOpen(false)} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
@@ -951,7 +1025,7 @@ export default function App() {
             </div>
 
             <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Hola Flavio. Este directorio es exclusivo para ti. Aquí puedes ver y actualizar las contraseñas de cualquier supervisor, jefe o superintendente. Haz clic fuera del campo de contraseña para guardar los cambios automáticamente.
+              Hola Flavio. Cualquier cambio de contraseña que hagas aquí se actualizará de inmediato en la nube para todos los supervisores. Haz clic fuera del campo para guardar automáticamente.
             </p>
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
@@ -984,10 +1058,10 @@ export default function App() {
                         className={`w-28 border rounded-lg px-2 py-1.5 text-xs font-mono font-bold shadow-inner ${
                           isDarkMode ? 'bg-slate-900 border-slate-700 text-cyan-300' : 'bg-white border-slate-300 text-[#003B6F]'
                         }`}
-                        title="Edita y haz clic fuera para guardar la nueva contraseña"
+                        title="Edita y haz clic fuera para guardar la nueva contraseña en la nube"
                       />
                     </div>
-                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>(Editable)</span>
+                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>(Online)</span>
                   </div>
                 </div>
               ))}
@@ -1014,7 +1088,7 @@ export default function App() {
             <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
               <div className="flex items-center space-x-2">
                 <Lock className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
-                <h3 className="font-bold text-base">Iniciar Sesión &bull; Puerto Marcobre</h3>
+                <h3 className="font-bold text-base">Iniciar Sesión &bull; Puerto Marcobre Online</h3>
               </div>
               {currentUser && (
                 <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-slate-200">
@@ -1030,7 +1104,7 @@ export default function App() {
                   value={loginUsername}
                   onChange={(e) => {
                     setLoginUsername(e.target.value);
-                    setLoginPassword(''); // Keeps password blank when switching user
+                    setLoginPassword('');
                   }}
                   className={`w-full border rounded-xl px-3 py-3 focus:outline-none text-xs font-medium shadow-inner ${
                     isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
@@ -1084,7 +1158,7 @@ export default function App() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>El usuario no distingue mayúsculas, minúsculas ni tildes. La contraseña distingue mayúsculas y minúsculas estrictamente.</span>
+                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>La contraseña se valida en tiempo real con la base de datos centralizada.</span>
               </div>
 
               {loginError && (
@@ -1110,7 +1184,7 @@ export default function App() {
                     type="submit"
                     className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
                   >
-                    Ingresar al Turno
+                    Ingresar al Turno Online
                   </button>
                 </div>
               </div>
@@ -1265,7 +1339,7 @@ export default function App() {
                   type="submit"
                   className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
                 >
-                  Guardar en Agenda Viva
+                  Guardar en la Nube
                 </button>
               </div>
             </form>
@@ -1377,8 +1451,8 @@ export default function App() {
               <div className={`p-3 rounded-xl border text-[11px] shadow-inner ${
                 isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'
               }`}>
-                <span className={`font-bold block mb-0.5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>Nota de Auditoría y Seguridad:</span>
-                Puedes modificar libremente los detalles y la frecuencia de tus pendientes. Al guardar, se registrará la actualización por <strong>{currentUser?.name}</strong>.
+                <span className={`font-bold block mb-0.5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>Sincronización Cloud:</span>
+                Los cambios se guardarán de inmediato en la base de datos para todos los supervisores. Actualizado por <strong>{currentUser?.name}</strong>.
               </div>
 
               <div className={`flex items-center justify-end space-x-3 pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
@@ -1395,7 +1469,7 @@ export default function App() {
                   type="submit"
                   className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
                 >
-                  Guardar Cambios
+                  Guardar Cambios en la Nube
                 </button>
               </div>
             </form>
