@@ -413,7 +413,7 @@ export default function App() {
           {currentUser?.username?.toLowerCase() === 'fespinoza' && (
             <button
               onClick={() => setIsUsersManagementModalOpen(true)}
-              className={`hidden md:flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
+              className={`flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
                 isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/10 text-[#003B6F] border-[#003B6F]/30'
               }`}
               title="Gestión de Credenciales (Solo Administrador Flavio Espinoza)"
