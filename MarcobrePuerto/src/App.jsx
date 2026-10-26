@@ -109,7 +109,7 @@ export default function App() {
   const fetchDataFromCloud = async () => {
     try {
       const { data: cloudUsers, error: errUsers } = await supabase.from('usuarios').select('*');
-      if (!errUsers && cloudUsers && cloudUsers.length > 0) {
+      if (!errUsers && cloudUsers) {
         setUsersList(cloudUsers);
         const savedSession = localStorage.getItem('marcobre_user_session');
         if (savedSession) {
