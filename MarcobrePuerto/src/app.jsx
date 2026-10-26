@@ -1,0 +1,1472 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  ShieldAlert, 
+  Calendar, 
+  CheckSquare, 
+  Users, 
+  FileText, 
+  Plus, 
+  Search, 
+  Filter, 
+  AlertTriangle, 
+  Clock, 
+  CheckCircle2, 
+  UserCheck, 
+  HardHat, 
+  Building2, 
+  Activity, 
+  RefreshCw, 
+  ArrowRightLeft, 
+  Layers, 
+  Briefcase, 
+  ChevronRight, 
+  X,
+  Save,
+  Download,
+  AlertCircle,
+  Lock,
+  LogOut,
+  User,
+  Shield,
+  Edit3,
+  RotateCw,
+  Bell,
+  Ship,
+  Sun,
+  Moon,
+  Key,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+
+// --- MARCIBRE PUERTO ROSTER (INITIAL USERS WITH USERNAMES & PASSWORDS) ---
+// Format: first letter of first name + paternal surname (e.g. cnanfuñay, cmachuca)
+// Plus master creator: Flavio Espinoza
+const INITIAL_USERS = [
+  // Master Creator / Admin
+  { id: 'usr-admin', username: 'fespinoza', password: '123', name: 'Flavio Espinoza', role: 'admin', guard: 'Todas', spec: 'Creador / Administrador App' },
+
+  // Jefatura y Superintendencia Puerto (Marcobre)
+  { id: 'usr-super', username: 'fpaolillo', password: '123', name: 'Francisco Javier Paolillo Tapia', role: 'superintendente', guard: 'Todas', spec: 'Superintendente Operaciones Puerto' },
+  { id: 'usr-jefe', username: 'mcaceres', password: '123', name: 'Manuel Antonio Caceres Falconi', role: 'jefe', guard: 'Todas', spec: 'Jefe de Operaciones Puerto' },
+
+  // Guardia A (Planta & Descarga)
+  { id: 'usr-a1', username: 'cnanfuñay', password: '123', name: 'Cronwel Vladimir Nanfuñay Lora', role: 'supervisor', guard: 'Guardia A', spec: 'Planta Servicios Ext.' },
+  { id: 'usr-a2', username: 'jhuaman', password: '123', name: 'Juan Carlos Huaman Quispe', role: 'supervisor', guard: 'Guardia A', spec: 'Descarga' },
+  
+  // Guardia B (Planta & Descarga)
+  { id: 'usr-b1', username: 'cmachuca', password: '123', name: 'Cesar Arnaldo Machuca Polo', role: 'supervisor', guard: 'Guardia B', spec: 'Planta Servicios Ext.' },
+  { id: 'usr-b2', username: 'ydiaz', password: '123', name: 'Yofre Díaz Guarderas', role: 'supervisor', guard: 'Guardia B', spec: 'Descarga' },
+
+  // Guardia C (Planta & Descarga - Vacante en Descarga)
+  { id: 'usr-c1', username: 'jchambergo', password: '123', name: 'Jorge Marco Chambergo Vargas', role: 'supervisor', guard: 'Guardia C', spec: 'Planta Servicios Ext.' },
+  { id: 'usr-c2', username: 'vvacante', password: '123', name: '[Vacante Descarga]', role: 'supervisor', guard: 'Guardia C', spec: 'Descarga' },
+
+  // Guardia D (Planta & Descarga)
+  { id: 'usr-d1', username: 'crudas', password: '123', name: 'Carlos Alberto Rudas Ramirez', role: 'supervisor', guard: 'Guardia D', spec: 'Planta Servicios Ext.' },
+  { id: 'usr-d2', username: 'wlopez', password: '123', name: 'William Jose Lopez Quiroz', role: 'supervisor', guard: 'Guardia D', spec: 'Descarga' },
+];
+
+const INITIAL_TASKS = [
+  {
+    id: 'task-1',
+    title: 'Reparación de cerradura de puerta de ingreso a Sala de Control Puerto',
+    description: 'La cerradura mecánica se trabó tras el último turno de descarga. Requiere cerrajero o cambio de pestillo.',
+    type: 'Mantenimiento / Instalaciones',
+    priority: 'Alta',
+    status: 'Pendiente',
+    assignedTo: 'Cesar Arnaldo Machuca Polo',
+    guard: 'Guardia B',
+    createdBy: 'Cesar Arnaldo Machuca Polo',
+    auditTrail: 'Creado por Cesar Arnaldo Machuca Polo (Supervisor - Guardia B)',
+    dueDate: '2026-10-28',
+    createdAt: '2026-10-26',
+    remindFrequency: 'Diaria'
+  },
+  {
+    id: 'task-2',
+    title: 'Reunión de coordinación con Mantenimiento por vibración en Bomba de Ácido #3',
+    description: 'Revisión técnica de sellos mecánicos con equipo de confiabilidad en Puerto.',
+    type: 'Reunión',
+    priority: 'Alta',
+    status: 'En Proceso',
+    assignedTo: 'General / Rotativo (Guardia B)',
+    guard: 'Guardia B',
+    createdBy: 'Manuel Antonio Caceres Falconi',
+    auditTrail: 'Creado y asignado por Manuel Antonio Caceres Falconi (Jefe de Operaciones Puerto)',
+    dueDate: '2026-10-27',
+    createdAt: '2026-10-25',
+    remindFrequency: '2 días antes'
+  },
+  {
+    id: 'task-3',
+    title: 'Compra urgente de repuestos de válvulas de ácido sulfúrico',
+    description: 'Generar requisición con abastecimiento para empaquetaduras de teflón de 4 pulgadas.',
+    type: 'Compra de equipo/repuesto',
+    priority: 'Alta',
+    status: 'Pendiente',
+    assignedTo: 'Yofre Díaz Guarderas',
+    guard: 'Guardia B',
+    createdBy: 'Yofre Díaz Guarderas',
+    auditTrail: 'Creado por Yofre Díaz Guarderas (Supervisor - Guardia B)',
+    dueDate: '2026-10-30',
+    createdAt: '2026-10-26',
+    remindFrequency: 'Diaria'
+  },
+  {
+    id: 'task-4',
+    title: 'Presentación de informe y balance de consumibles a Superintendencia',
+    description: 'Preparar deck con balance de transferencia y consumo de reactivos del mes.',
+    type: 'Informe / Justificación Gerencia',
+    priority: 'Media',
+    status: 'Pendiente',
+    assignedTo: 'General / Rotativo',
+    guard: 'Todas',
+    createdBy: 'Francisco Javier Paolillo Tapia',
+    auditTrail: 'Creado y asignado por Francisco Javier Paolillo Tapia (Superintendente)',
+    dueDate: '2026-11-02',
+    createdAt: '2026-10-24',
+    remindFrequency: 'Semanal'
+  },
+  {
+    id: 'task-5',
+    title: 'Levantamiento de observación de seguridad por EPP en zona de descarga',
+    description: 'Se detectó carencia de caretas faciales normadas en personal contratista de muelle.',
+    type: 'Observación de Seguridad',
+    priority: 'Alta',
+    status: 'En Proceso',
+    assignedTo: 'Jorge Marco Chambergo Vargas',
+    guard: 'Guardia C',
+    createdBy: 'Jorge Marco Chambergo Vargas',
+    auditTrail: 'Creado por Jorge Marco Chambergo Vargas (Supervisor - Guardia C)',
+    dueDate: '2026-10-29',
+    createdAt: '2026-10-26',
+    remindFrequency: 'Diaria'
+  }
+];
+
+export default function App() {
+  // Theme State (Dark / Light mode toggle) with localStorage persistence
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marcobre_dark_mode');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Users Database State with persistence
+  const [usersList, setUsersList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marcobre_users_db');
+      return saved ? JSON.parse(saved) : INITIAL_USERS;
+    } catch {
+      return INITIAL_USERS;
+    }
+  });
+
+  // Authentication State with localStorage session persistence
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marcobre_user_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const found = usersList.find(u => u.username === parsed.username);
+        if (found) return found;
+      }
+    } catch {}
+    return usersList[0]; // Default to Flavio Espinoza (Admin)
+  });
+
+  // Login Form State
+  const [loginUsername, setLoginUsername] = useState(currentUser.username);
+  const [loginPassword, setLoginPassword] = useState(currentUser.password || '123');
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isUsersManagementModalOpen, setIsUsersManagementModalOpen] = useState(false);
+
+  // Sync dark mode state with localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('marcobre_dark_mode', JSON.stringify(isDarkMode));
+    } catch {}
+  }, [isDarkMode]);
+
+  // Sync users list to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('marcobre_users_db', JSON.stringify(usersList));
+    } catch {}
+  }, [usersList]);
+
+  // Sync user session with localStorage so login persists until manual logout
+  useEffect(() => {
+    try {
+      localStorage.setItem('marcobre_user_session', JSON.stringify({ username: currentUser.username }));
+    } catch {}
+  }, [currentUser]);
+
+  // 10x10 Regime State (Cycle day 1 to 10)
+  const [regimeCycleDay, setRegimeCycleDay] = useState(4); 
+  
+  // App Tabs & Navigation
+  const [activeTab, setActiveTab] = useState('agenda');
+  const [tasks, setTasks] = useState(INITIAL_TASKS);
+
+  // Filter States
+  const [taskFilter, setTaskFilter] = useState('mis-tareas');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Modals
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
+  const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null);
+
+  // New Task Form
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    type: 'Mantenimiento / Instalaciones',
+    priority: 'Media',
+    status: 'Pendiente',
+    assignedTo: currentUser.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo',
+    guard: currentUser.guard !== 'Todas' ? currentUser.guard : 'Guardia B',
+    dueDate: new Date().toISOString().split('T')[0],
+    remindFrequency: 'Diaria'
+  });
+
+  // Handle Login Submit with Robust Verification (Case & Accent Insensitive for username across all users, strict case for password)
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    setLoginError('');
+    
+    // Normalize input username for all users: lowercase and remove accents for robust matching
+    const normalizeStr = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const cleanInputUser = normalizeStr(loginUsername.trim());
+
+    const found = usersList.find(u => normalizeStr(u.username) === cleanInputUser);
+    
+    if (!found) {
+      setLoginError('Usuario no encontrado. Verifique su usuario (Ej: cnanfuñay, fespinoza).');
+      return;
+    }
+    if (found.password && found.password !== loginPassword) {
+      setLoginError('Contraseña incorrecta. Recuerde que la contraseña distingue mayúsculas y minúsculas.');
+      return;
+    }
+
+    setCurrentUser(found);
+    setIsLoginModalOpen(false);
+    setNewTask(prev => ({
+      ...prev,
+      guard: found.guard !== 'Todas' ? found.guard : 'Guardia B',
+      assignedTo: found.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo'
+    }));
+  };
+
+  // Handle Password Update for Users (Strictly Admin / Flavio Espinoza)
+  const handleUpdateUserPassword = (userId, newPass) => {
+    if (currentUser.role !== 'admin') {
+      alert('Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
+      return;
+    }
+    const updated = usersList.map(u => u.id === userId ? { ...u, password: newPass } : u);
+    setUsersList(updated);
+  };
+
+  // Handle Logout / Clear Session
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('marcobre_user_session');
+    } catch {}
+    setCurrentUser(usersList[0]);
+    setLoginUsername(usersList[0].username);
+    setLoginPassword(usersList[0].password || '123');
+  };
+
+  // Determine active guards based on simulated 10x10 staggered rotation
+  const activeGuardsInfo = useMemo(() => {
+    if (regimeCycleDay <= 5) {
+      return {
+        duty: ['Guardia B (César Machuca / Yofre Díaz)', 'Guardia C (Jorge Chambergo - Último día)'],
+        rest: ['Guardia A (Cronwel Nanfuñay / Juan Huaman)', 'Guardia D (Carlos Rudas / William Lopez)'],
+        phaseText: `Régimen 10x10 Puerto (Día ${regimeCycleDay}/10): Guardia B en turno activo. Guardia C baja mañana.`
+      };
+    } else {
+      return {
+        duty: ['Guardia B (César Machuca / Yofre Díaz)', 'Guardia A (Cronwel Nanfuñay / Juan Huaman - Subió de relevo)'],
+        rest: ['Guardia C (Jorge Chambergo - Descanso)', 'Guardia D (Carlos Rudas / William Lopez)'],
+        phaseText: `Régimen 10x10 Puerto (Día ${regimeCycleDay}/10): Guardia A relevó a Guardia C. Guardia B continúa.`
+      };
+    }
+  }, [regimeCycleDay]);
+
+  // Notifications calculation based on due dates & frequencies
+  const activeNotifications = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return tasks.filter(t => {
+      if (t.status === 'Completado') return false;
+      const dueDateObj = new Date(t.dueDate);
+      const todayObj = new Date(today);
+      const diffDays = Math.ceil((dueDateObj - todayObj) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 0) return true;
+      if (t.remindFrequency === 'Diaria' && diffDays <= 3) return true;
+      if (t.remindFrequency === '2 días antes' && diffDays <= 2) return true;
+      if (t.remindFrequency === '3 días antes' && diffDays <= 3) return true;
+      if (t.remindFrequency === 'Semanal' && diffDays <= 7) return true;
+      return false;
+    });
+  }, [tasks]);
+
+  // Filtered Tasks Calculation
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+
+      if (taskFilter === 'mis-tareas') {
+        if (currentUser.role === 'supervisor') {
+          return task.assignedTo === currentUser.name || (task.assignedTo.includes('General') && task.guard === currentUser.guard);
+        }
+        return true; 
+      } else if (taskFilter === 'general') {
+        return task.assignedTo.includes('General');
+      } else if (taskFilter === 'urgentes') {
+        return task.priority === 'Alta' && task.status !== 'Completado';
+      }
+      return true; 
+    });
+  }, [tasks, taskFilter, searchQuery, currentUser]);
+
+  // Handle Create Task (Strict restriction: Supervisors can only assign to themselves or General of their guard)
+  const handleCreateTask = (e) => {
+    e.preventDefault();
+    if (!newTask.title) return;
+
+    let assigned = newTask.assignedTo;
+    if (currentUser.role === 'supervisor') {
+      if (assigned === 'Personal (Solo yo)') {
+        assigned = currentUser.name;
+      } else {
+        assigned = `General / Rotativo (${currentUser.guard})`;
+      }
+    }
+
+    let auditText = '';
+    if (currentUser.role === 'admin') {
+      auditText = `Creado por ${currentUser.name} (Administrador App)`;
+    } else if (currentUser.role === 'jefe') {
+      auditText = `Creado y asignado por ${currentUser.name} (Jefe de Operaciones)`;
+    } else if (currentUser.role === 'superintendente') {
+      auditText = `Creado y asignado por ${currentUser.name} (Superintendente de Operaciones Puerto)`;
+    } else {
+      auditText = `Creado por ${currentUser.name} (Supervisor - ${currentUser.guard})`;
+    }
+
+    const createdObj = {
+      id: 'task-' + (tasks.length + 1),
+      ...newTask,
+      assignedTo: assigned,
+      guard: currentUser.guard !== 'Todas' ? currentUser.guard : newTask.guard,
+      createdBy: currentUser.name,
+      auditTrail: auditText,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setTasks([createdObj, ...tasks]);
+    setIsNewTaskModalOpen(false);
+    setNewTask({
+      title: '',
+      description: '',
+      type: 'Mantenimiento / Instalaciones',
+      priority: 'Media',
+      status: 'Pendiente',
+      assignedTo: currentUser.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo',
+      guard: currentUser.guard !== 'Todas' ? currentUser.guard : 'Guardia B',
+      dueDate: new Date().toISOString().split('T')[0],
+      remindFrequency: 'Diaria'
+    });
+  };
+
+  // Handle Update Task (Supervisors can edit their own tasks: description, status, frequency, but CANNOT delete)
+  const handleUpdateTask = (e) => {
+    e.preventDefault();
+    if (!selectedTaskForEdit) return;
+
+    const auditAddition = (currentUser.role === 'jefe' || currentUser.role === 'superintendente' || currentUser.role === 'admin')
+      ? ` | Modificado por ${currentUser.name} (${currentUser.role === 'admin' ? 'Admin' : currentUser.role})`
+      : ` | Actualizado por ${currentUser.name}`;
+
+    setTasks(tasks.map(t => {
+      if (t.id === selectedTaskForEdit.id) {
+        return {
+          ...selectedTaskForEdit,
+          auditTrail: t.auditTrail + auditAddition
+        };
+      }
+      return t;
+    }));
+
+    setIsEditTaskModalOpen(false);
+    setSelectedTaskForEdit(null);
+  };
+
+  const toggleTaskStatus = (id) => {
+    setTasks(tasks.map(t => {
+      if (t.id === id) {
+        const nextStatus = t.status === 'Pendiente' ? 'En Proceso' : t.status === 'En Proceso' ? 'Completado' : 'Pendiente';
+        return { ...t, status: nextStatus };
+      }
+      return t;
+    }));
+  };
+
+  return (
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+      isDarkMode 
+        ? 'bg-slate-950 text-slate-100 selection:bg-cyan-600 selection:text-white' 
+        : 'bg-[#f4f7fa] text-slate-800 selection:bg-[#003B6F] selection:text-white'
+    }`}>
+      
+      {/* HEADER BAR - MARCIBRE CORPORATE WHITE & OCEAN BLUE / DARK MODE */}
+      <header className={`border-b sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-xs transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="flex items-center space-x-3.5">
+          {/* Chemical Tanker Ship Vector Logo Icon */}
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#003B6F] to-[#005B9F] shadow-sm flex items-center justify-center text-white flex-shrink-0">
+            <Ship className="w-6 h-6 text-cyan-200" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className={`font-extrabold text-sm lg:text-lg tracking-tight ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>
+                MARCOBRE &bull; PUERTO AGENDA VIVA
+              </h1>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold hidden sm:inline-block border ${
+                isDarkMode 
+                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' 
+                  : 'bg-[#003B6F]/8 text-[#003B6F] border-[#003B6F]/20'
+              }`}>
+                Superintendencia de Operaciones Puerto
+              </span>
+            </div>
+            <p className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Control de Pendientes, Reuniones y Régimen 10x10</p>
+          </div>
+        </div>
+
+        {/* Right side controls: Theme toggle, Credentials manager, Notification Bell & Profile Pill */}
+        <div className="flex items-center space-x-3">
+          
+          {/* Marcobre Logo Graphic Badge */}
+          <div className={`hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-xl border shadow-2xs ${
+            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <div className="w-5 h-5 bg-[#D32F2F] rounded-xs flex items-center justify-center text-white font-black text-[10px] shadow-2xs">
+              M
+            </div>
+            <span className={`font-extrabold text-[11px] tracking-wider ${isDarkMode ? 'text-slate-200' : 'text-[#003B6F]'}`}>MARCOBRE</span>
+          </div>
+
+          {/* Dark / Light Mode Toggle Button */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`p-2.5 rounded-xl transition flex items-center justify-center border shadow-2xs ${
+              isDarkMode 
+                ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-400' 
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
+            }`}
+            title={isDarkMode ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Credentials / Passwords Management Button (Visible to Admin Flavio Espinoza) */}
+          <button
+            onClick={() => setIsUsersManagementModalOpen(true)}
+            className={`hidden md:flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
+              currentUser.role === 'admin'
+                ? (isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/10 text-[#003B6F] border-[#003B6F]/30')
+                : (isDarkMode ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700')
+            }`}
+            title="Gestión de Credenciales (Solo Administrador)"
+          >
+            <Key className="w-3.5 h-3.5" />
+            <span>Credenciales {currentUser.role === 'admin' && '(Admin)'}</span>
+          </button>
+
+          {/* Notification Bell Button */}
+          <button
+            onClick={() => setIsNotificationModalOpen(true)}
+            className={`relative p-2.5 rounded-xl transition flex items-center justify-center border shadow-2xs ${
+              isDarkMode 
+                ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-cyan-400' 
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-[#003B6F]'
+            }`}
+            title="Centro de Alertas y Notificaciones"
+          >
+            <Bell className="w-4 h-4" />
+            {activeNotifications.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs border-2 border-white animate-pulse">
+                {activeNotifications.length}
+              </span>
+            )}
+          </button>
+
+          {/* Current User Profile Switcher Pill */}
+          <div 
+            onClick={() => {
+              setLoginUsername(currentUser.username);
+              setLoginPassword(currentUser.password || '123');
+              setLoginError('');
+              setIsLoginModalOpen(true);
+            }}
+            className={`px-3.5 py-2 rounded-xl flex items-center space-x-2.5 cursor-pointer transition border shadow-2xs ${
+              isDarkMode ? 'bg-slate-800 hover:bg-slate-700 border-slate-700' : 'bg-white hover:bg-slate-50 border-slate-300'
+            }`}
+          >
+            <div className={`w-2.5 h-2.5 rounded-full ${currentUser.role === 'admin' ? 'bg-cyan-400' : currentUser.role === 'superintendente' ? 'bg-amber-500' : currentUser.role === 'jefe' ? 'bg-[#003B6F]' : 'bg-emerald-500'}`}></div>
+            <div className="text-left hidden sm:block">
+              <span className={`text-[9px] block leading-none font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>Sesión Activa</span>
+              <span className={`text-xs font-bold truncate max-w-[170px] ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{currentUser.name}</span>
+            </div>
+            <Shield className={`w-3.5 h-3.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'} ml-1`} />
+          </div>
+
+          <button 
+            onClick={() => {
+              setNewTask(prev => ({
+                ...prev,
+                guard: currentUser.guard !== 'Todas' ? currentUser.guard : 'Guardia B',
+                assignedTo: currentUser.role === 'supervisor' ? 'Personal (Solo yo)' : 'General / Rotativo'
+              }));
+              setIsNewTaskModalOpen(true);
+            }}
+            className="bg-[#003B6F] hover:bg-[#002D56] text-white text-xs lg:text-sm font-bold px-4 py-2.5 rounded-xl flex items-center space-x-1.5 transition shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Nuevo Pendiente</span>
+          </button>
+        </div>
+      </header>
+
+      {/* SHIFT & REGIME 10X10 BANNER */}
+      <div className={`border-b px-4 lg:px-8 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs shadow-2xs transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="flex items-center space-x-3">
+          <div className={`p-1.5 rounded-lg border flex items-center space-x-1.5 ${
+            isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/8 text-[#003B6F] border-[#003B6F]/20'
+          }`}>
+            <RotateCw className="w-3.5 h-3.5" />
+            <span className="font-bold">Régimen 10x10 Puerto</span>
+          </div>
+          <span className={`font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+            {activeGuardsInfo.phaseText}
+          </span>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <div className={`px-3 py-1 rounded-lg border flex items-center space-x-2 ${
+            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>En Turno:</span>
+            <span className="text-emerald-500 font-bold">{activeGuardsInfo.duty.join(' | ')}</span>
+          </div>
+          <button
+            onClick={() => setRegimeCycleDay(prev => prev <= 5 ? 6 : 1)}
+            className={`px-2.5 py-1 rounded-lg font-semibold transition border ${
+              isDarkMode 
+                ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700' 
+                : 'bg-slate-100 hover:bg-slate-200 text-[#003B6F] border-slate-300'
+            }`}
+            title="Simular relevo de turno"
+          >
+            Simular Relevo (Día {regimeCycleDay})
+          </button>
+        </div>
+      </div>
+
+      {/* SUB-NAV TABS */}
+      <div className={`border-b px-4 lg:px-8 flex space-x-2 overflow-x-auto shadow-2xs transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <button
+          onClick={() => setActiveTab('agenda')}
+          className={`flex items-center space-x-2 py-3 px-4 border-b-2 font-medium text-xs sm:text-sm transition whitespace-nowrap ${
+            activeTab === 'agenda' 
+              ? (isDarkMode ? 'border-cyan-400 text-cyan-300 bg-cyan-950/30 font-bold' : 'border-[#003B6F] text-[#003B6F] bg-[#003B6F]/5 font-bold') 
+              : (isDarkMode ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50')
+          }`}
+        >
+          <CheckSquare className="w-4 h-4" />
+          <span>Agenda Viva de Pendientes</span>
+          <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+            isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'
+          }`}>
+            {tasks.filter(t => t.status !== 'Completado').length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`flex items-center space-x-2 py-3 px-4 border-b-2 font-medium text-xs sm:text-sm transition whitespace-nowrap ${
+            activeTab === 'audit' 
+              ? (isDarkMode ? 'border-cyan-400 text-cyan-300 bg-cyan-950/30 font-bold' : 'border-[#003B6F] text-[#003B6F] bg-[#003B6F]/5 font-bold') 
+              : (isDarkMode ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50')
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Historial y Trazabilidad de Jefatura</span>
+        </button>
+      </div>
+
+      {/* MAIN CONTENT CONTAINER */}
+      <main className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+        
+        {/* TAB 1: AGENDA VIVA (MAIN TASK BOARD) */}
+        {activeTab === 'agenda' && (
+          <div className="space-y-6">
+            
+            {/* Context Banner for Current Role */}
+            <div className={`border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs transition-colors duration-200 ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+              <div className="flex items-center space-x-4">
+                <div className={`p-3 rounded-xl border ${
+                  currentUser.role === 'admin' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' :
+                  currentUser.role === 'superintendente' ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' :
+                  currentUser.role === 'jefe' ? (isDarkMode ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-[#003B6F]/10 border-[#003B6F]/30 text-[#003B6F]') :
+                  'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                }`}>
+                  {currentUser.role === 'admin' ? <Key className="w-6 h-6" /> : currentUser.role === 'superintendente' ? <Building2 className="w-6 h-6" /> : currentUser.role === 'jefe' ? <Briefcase className="w-6 h-6" /> : <HardHat className="w-6 h-6" />}
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h2 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{currentUser.name}</h2>
+                    <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-semibold border ${
+                      isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}>
+                      {currentUser.role === 'admin' ? 'Administrador / Creador' : currentUser.role === 'superintendente' ? 'Superintendencia Puerto' : currentUser.role === 'jefe' ? 'Jefe de Operaciones Puerto' : `${currentUser.guard} - ${currentUser.spec}`}
+                    </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${isDarkMode ? 'bg-slate-800 text-cyan-300' : 'bg-slate-100 text-[#003B6F]'}`}>
+                      @{currentUser.username}
+                    </span>
+                  </div>
+                  <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {currentUser.role === 'admin'
+                      ? 'Eres el creador y administrador general de la App. Tienes control absoluto para cambiar las contraseñas de cualquier supervisor o jefe.'
+                      : currentUser.role === 'supervisor' 
+                      ? `Registras pendientes para tu guardia (${currentUser.guard}). Puedes editar tus propios registros, pero no eliminarlos.` 
+                      : 'Tienes privilegios de Superintendencia y Jefatura: puedes registrar, editar y reasignar tareas a cualquier supervisor del puerto.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className={`text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Sesión:</span>
+                <button
+                  onClick={() => {
+                    setLoginUsername(currentUser.username);
+                    setLoginPassword(currentUser.password || '123');
+                    setLoginError('');
+                    setIsLoginModalOpen(true);
+                  }}
+                  className={`text-xs font-bold px-3 py-2 rounded-xl transition border flex items-center space-x-1 shadow-2xs ${
+                    isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-[#003B6F] border-slate-300'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Cambiar Perfil</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs font-bold px-3 py-2 rounded-xl transition border bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/30 flex items-center space-x-1 shadow-2xs"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Salir</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Controls Bar: Filters & Search */}
+            <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border p-4 rounded-2xl shadow-2xs transition-colors duration-200 ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+              
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => setTaskFilter('mis-tareas')}
+                  className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition ${
+                    taskFilter === 'mis-tareas' 
+                      ? (isDarkMode ? 'bg-cyan-600 text-white font-bold shadow-xs' : 'bg-[#003B6F] text-white font-bold shadow-xs') 
+                      : (isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200')
+                  }`}
+                >
+                  {currentUser.role === 'supervisor' ? `Mis Tareas (${currentUser.guard})` : 'Vista General Puerto'}
+                </button>
+
+                <button
+                  onClick={() => setTaskFilter('general')}
+                  className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition ${
+                    taskFilter === 'general' 
+                      ? (isDarkMode ? 'bg-cyan-600 text-white font-bold shadow-xs' : 'bg-[#003B6F] text-white font-bold shadow-xs') 
+                      : (isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200')
+                  }`}
+                >
+                  Generales / Rotativos
+                </button>
+
+                <button
+                  onClick={() => setTaskFilter('urgentes')}
+                  className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition ${
+                    taskFilter === 'urgentes' 
+                      ? 'bg-rose-600 text-white font-bold shadow-xs' 
+                      : (isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200')
+                  }`}
+                >
+                  Alta Prioridad
+                </button>
+
+                <button
+                  onClick={() => setTaskFilter('todos')}
+                  className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition ${
+                    taskFilter === 'todos' 
+                      ? (isDarkMode ? 'bg-cyan-600 text-white font-bold shadow-xs' : 'bg-[#003B6F] text-white font-bold shadow-xs') 
+                      : (isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200')
+                  }`}
+                >
+                  Todos ({tasks.length})
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full md:w-72">
+                <Search className={`absolute left-3.5 top-3 w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <input 
+                  type="text"
+                  placeholder="Buscar pendiente, reunión, compra..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full border rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none transition shadow-inner ${
+                    isDarkMode 
+                      ? 'bg-slate-950 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500' 
+                      : 'bg-slate-50 border-slate-300 text-slate-800 placeholder:text-slate-400 focus:border-[#003B6F]'
+                  }`}
+                />
+              </div>
+
+            </div>
+
+            {/* Task Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTasks.map(task => {
+                const canEditTask = currentUser.role === 'admin' || currentUser.role === 'jefe' || currentUser.role === 'superintendente' || task.assignedTo === currentUser.name || task.createdBy === currentUser.name;
+                return (
+                  <div key={task.id} className={`border rounded-2xl p-5 shadow-2xs flex flex-col justify-between transition relative group ${
+                    isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'
+                  }`}>
+                    
+                    {/* Top Row: Priority & Type */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                          task.priority === 'Alta' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30' :
+                          task.priority === 'Media' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30' :
+                          'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                        }`}>
+                          {task.priority}
+                        </span>
+
+                        <div className={`flex items-center space-x-1.5 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <Bell className={`w-3.5 h-3.5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
+                          <span>Frecuencia: {task.remindFrequency || 'Diaria'}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                            isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}>{task.guard}</span>
+                          <span className={`text-[11px] font-semibold ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>{task.type}</span>
+                        </div>
+                        <h3 className={`font-bold text-sm leading-snug ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{task.title}</h3>
+                        <p className={`text-xs mt-2 leading-relaxed line-clamp-3 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{task.description}</p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Metadata & Actions */}
+                    <div className={`mt-5 pt-4 border-t space-y-3 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                      
+                      <div className={`p-2.5 rounded-xl border text-[11px] space-y-1 shadow-inner ${
+                        isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <div className="flex justify-between">
+                          <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Responsable:</span>
+                          <strong className={isDarkMode ? 'text-cyan-300' : 'text-[#003B6F]'}>{task.assignedTo}</strong>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Vencimiento:</span>
+                          <span className="text-rose-500 font-semibold">{task.dueDate}</span>
+                        </div>
+                        <div className={`text-[10px] pt-1 border-t truncate ${isDarkMode ? 'text-slate-500 border-slate-800' : 'text-slate-400 border-slate-200'}`}>
+                          {task.auditTrail}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => toggleTaskStatus(task.id)}
+                          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 ${
+                            task.status === 'Completado' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' :
+                            task.status === 'En Proceso' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' :
+                            'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                          }`}
+                        >
+                          <span>{task.status}</span>
+                        </button>
+
+                        {canEditTask && (
+                          <button
+                            onClick={() => {
+                              setSelectedTaskForEdit(task);
+                              setIsEditTaskModalOpen(true);
+                            }}
+                            className={`text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1 border shadow-2xs ${
+                              isDarkMode 
+                                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                            }`}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>{currentUser.role === 'supervisor' ? 'Editar' : 'Editar / Reasignar'}</span>
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {filteredTasks.length === 0 && (
+              <div className={`border rounded-2xl p-12 text-center shadow-2xs ${
+                isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+              }`}>
+                <AlertCircle className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                <p className="font-medium text-sm">No hay pendientes registrados en esta vista.</p>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* TAB 2: AUDIT TRAIL / JEFATURA LOG */}
+        {activeTab === 'audit' && (
+          <div className="space-y-6">
+            <div className={`border p-6 rounded-2xl space-y-4 shadow-2xs transition-colors duration-200 ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+              <div>
+                <h2 className={`text-base sm:text-lg font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Historial de Trazabilidad y Asignaciones Puerto</h2>
+                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Registro detallado de qué jefatura, admin o superintendencia asignó las tareas y qué supervisores las registraron por guardia.</p>
+              </div>
+
+              <div className="space-y-3">
+                {tasks.map(t => (
+                  <div key={t.id} className={`border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs ${
+                    isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold border ${
+                          isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/8 text-[#003B6F] border-[#003B6F]/20'
+                        }`}>
+                          {t.guard} &bull; {t.type}
+                        </span>
+                        <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Creado el {t.createdAt} (Límite: {t.dueDate})</span>
+                      </div>
+                      <h4 className={`font-bold text-sm ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{t.title}</h4>
+                      <p className={`text-xs font-mono px-2.5 py-1 rounded border inline-block shadow-2xs ${
+                        isDarkMode ? 'bg-slate-900 text-slate-300 border-slate-800' : 'bg-white text-slate-600 border-slate-200'
+                      }`}>
+                        Audit: {t.auditTrail}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className={`text-[11px] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Responsable Actual:</span>
+                      <strong className={`text-xs ${isDarkMode ? 'text-cyan-300' : 'text-[#003B6F]'}`}>{t.assignedTo}</strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* FOOTER */}
+      <footer className={`border-t py-4 px-6 text-center text-xs transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+      }`}>
+        MARCOBRE PUERTO &bull; Sistema de Tareas para Supervisores, Jefatura y Superintendencia &bull; Admin: Flavio Espinoza
+      </footer>
+
+      {/* MODAL: NOTIFICATION CENTER */}
+      {isNotificationModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
+          <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 ${
+            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <div className="flex items-center space-x-2">
+                <Bell className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
+                <h3 className="font-bold text-base">Centro de Alertas y Notificaciones</h3>
+              </div>
+              <button onClick={() => setIsNotificationModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              {activeNotifications.length > 0 ? (
+                activeNotifications.map(notif => (
+                  <div key={notif.id} className={`border p-3.5 rounded-xl space-y-1.5 shadow-2xs ${
+                    isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] bg-rose-500/10 text-rose-500 border border-rose-500/30 px-2 py-0.5 rounded font-bold uppercase">
+                        Vence: {notif.dueDate}
+                      </span>
+                      <span className={`text-[10px] font-semibold ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>Frecuencia: {notif.remindFrequency}</span>
+                    </div>
+                    <h4 className="font-bold text-xs">{notif.title}</h4>
+                    <p className={`text-[11px] line-clamp-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{notif.description}</p>
+                    <div className={`text-[10px] pt-1 border-t flex justify-between ${isDarkMode ? 'text-slate-400 border-slate-800' : 'text-slate-500 border-slate-200'}`}>
+                      <span>Responsable: <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-800'}>{notif.assignedTo}</strong></span>
+                      <span>Guardia: <strong className={isDarkMode ? 'text-slate-200' : 'text-slate-800'}>{notif.guard}</strong></span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-400 text-xs">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                  <p>No hay alertas pendientes según la frecuencia configurada.</p>
+                </div>
+              )}
+            </div>
+
+            <div className={`flex justify-end pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <button
+                onClick={() => setIsNotificationModalOpen(false)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition border shadow-2xs ${
+                  isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: USERS & CREDENTIALS MANAGEMENT (ADMIN FLAVIO ESPINOZA EXCLUSIVE) */}
+      {isUsersManagementModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
+          <div className={`border rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 ${
+            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <div className="flex items-center space-x-2">
+                <Key className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
+                <h3 className="font-bold text-base">Gestión de Credenciales (Administrador: Flavio Espinoza)</h3>
+              </div>
+              <button onClick={() => setIsUsersManagementModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {currentUser.role !== 'admin' ? (
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 p-4 rounded-xl text-xs font-semibold space-y-1">
+                <p>Acceso Restringido.</p>
+                <p>Solo el Creador y Administrador de la App (**Flavio Espinoza - @fespinoza**) puede modificar las contraseñas de los usuarios. Tu usuario actual es <strong>{currentUser.name}</strong>.</p>
+              </div>
+            ) : (
+              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Hola Flavio. Aquí puedes ver los usuarios (primer inicial + apellido paterno, ej. @cnanfuñay) y actualizar las contraseñas de cualquier supervisor, jefe o superintendente. Haz clic fuera del campo para guardar los cambios.
+              </p>
+            )}
+
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              {usersList.map(u => (
+                <div key={u.id} className={`border p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs ${
+                  isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase border ${
+                        u.role === 'admin' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                        u.role === 'superintendente' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' :
+                        u.role === 'jefe' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                        'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                      }`}>
+                        {u.role === 'admin' ? 'Administrador' : u.role === 'superintendente' ? 'Superintendente' : u.role === 'jefe' ? 'Jefe de Operaciones' : `${u.guard} - Supervisor`}
+                      </span>
+                      <span className={`text-xs font-mono font-semibold ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>@{u.username}</span>
+                    </div>
+                    <h4 className="font-bold text-xs">{u.name}</h4>
+                    <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{u.spec}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <div className="relative">
+                      <input 
+                        type="text"
+                        disabled={currentUser.role !== 'admin'}
+                        defaultValue={u.password || '123'}
+                        onBlur={(e) => handleUpdateUserPassword(u.id, e.target.value)}
+                        className={`w-28 border rounded-lg px-2 py-1.5 text-xs font-mono font-bold shadow-inner ${
+                          currentUser.role !== 'admin' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-slate-800' :
+                          isDarkMode ? 'bg-slate-900 border-slate-700 text-cyan-300' : 'bg-white border-slate-300 text-[#003B6F]'
+                        }`}
+                        title={currentUser.role === 'admin' ? 'Edita y haz clic fuera para guardar la nueva contraseña' : 'Solo Flavio Espinoza puede editar'}
+                      />
+                    </div>
+                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>({currentUser.role === 'admin' ? 'Editable' : 'Bloqueado'})</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className={`flex justify-end pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <button
+                onClick={() => setIsUsersManagementModalOpen(false)}
+                className="bg-[#003B6F] hover:bg-[#002D56] text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs"
+              >
+                Cerrar Directorio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LOGIN / SWITCH USER WITH PASSWORD */}
+      {isLoginModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
+          <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 ${
+            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <div className="flex items-center space-x-2">
+                <Lock className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
+                <h3 className="font-bold text-base">Iniciar Sesión &bull; Puerto Marcobre</h3>
+              </div>
+              <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className={`block font-semibold mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Seleccione su Perfil o escriba su usuario:</label>
+                <select
+                  value={loginUsername}
+                  onChange={(e) => {
+                    setLoginUsername(e.target.value);
+                    const found = usersList.find(u => u.username === e.target.value);
+                    if (found) setLoginPassword(found.password || '123');
+                  }}
+                  className={`w-full border rounded-xl px-3 py-3 focus:outline-none text-xs font-medium shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                  }`}
+                >
+                  <optgroup label="Administrador de la App">
+                    <option value="fespinoza">Flavio Espinoza (Creador / Admin - @fespinoza)</option>
+                  </optgroup>
+                  <optgroup label="Superintendencia y Jefatura Puerto">
+                    <option value="fpaolillo">Francisco Javier Paolillo Tapia (Superintendente - @fpaolillo)</option>
+                    <option value="mcaceres">Manuel Antonio Caceres Falconi (Jefe de Operaciones - @mcaceres)</option>
+                  </optgroup>
+                  <optgroup label="Guardia A">
+                    <option value="cnanfuñay">Cronwel Vladimir Nanfuñay Lora (Planta - @cnanfuñay)</option>
+                    <option value="jhuaman">Juan Carlos Huaman Quispe (Descarga - @jhuaman)</option>
+                  </optgroup>
+                  <optgroup label="Guardia B">
+                    <option value="cmachuca">Cesar Arnaldo Machuca Polo (Planta - @cmachuca)</option>
+                    <option value="ydiaz">Yofre Díaz Guarderas (Descarga - @ydiaz)</option>
+                  </optgroup>
+                  <optgroup label="Guardia C">
+                    <option value="jchambergo">Jorge Marco Chambergo Vargas (Planta - @jchambergo)</option>
+                    <option value="vvacante">[Vacante Descarga] (Descarga - @vvacante)</option>
+                  </optgroup>
+                  <optgroup label="Guardia D">
+                    <option value="crudas">Carlos Alberto Rudas Ramirez (Planta - @crudas)</option>
+                    <option value="wlopez">William Jose Lopez Quiroz (Descarga - @wlopez)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Contraseña de Acceso:</label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Ingrese su contraseña"
+                    className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none shadow-inner pr-10 font-mono ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>El usuario no distingue mayúsculas, minúsculas ni tildes. La contraseña (ej. <strong>123</strong>) sí distingue mayúsculas y minúsculas estrictamente.</span>
+              </div>
+
+              {loginError && (
+                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 p-2.5 rounded-xl text-xs font-semibold">
+                  {loginError}
+                </div>
+              )}
+
+              <div className={`flex items-center justify-between pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsUsersManagementModalOpen(true)}
+                  className={`text-xs font-semibold underline ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}
+                >
+                  Directorio de Credenciales
+                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLoginModalOpen(false)}
+                    className={`px-4 py-2 rounded-xl font-medium transition border shadow-2xs ${
+                      isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
+                  >
+                    Ingresar al Turno
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NEW TASK / PENDIENTE */}
+      {isNewTaskModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8 ${
+            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <h3 className="font-bold text-base">Registrar Nuevo Pendiente / Reunión / Compra</h3>
+              <button onClick={() => setIsNewTaskModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTask} className="space-y-4 text-xs">
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Título del Pendiente / Reunión *</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Ej: Reunión por falla en bomba de ácido en muelle"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Categoría</label>
+                  <select
+                    value={newTask.type}
+                    onChange={(e) => setNewTask({...newTask, type: e.target.value})}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  >
+                    <option value="Mantenimiento / Instalaciones">Mantenimiento / Instalaciones (ej. cerradura)</option>
+                    <option value="Compra de equipo/repuesto">Compra de equipo / repuesto</option>
+                    <option value="Reunión">Reunión de coordinación</option>
+                    <option value="Observación de Seguridad">Observación de Seguridad (SST)</option>
+                    <option value="Informe / Justificación Gerencia">Informe / Justificación a Superintendencia</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Prioridad</label>
+                  <select
+                    value={newTask.priority}
+                    onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  >
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Baja">Baja</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Asignación</label>
+                  <select
+                    value={newTask.assignedTo}
+                    onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  >
+                    {currentUser.role === 'supervisor' ? (
+                      <>
+                        <option value="Personal (Solo yo)">Personal (Solo para mí - {currentUser.name})</option>
+                        <option value={`General / Rotativo (${currentUser.guard})`}>General para mi Guardia ({currentUser.guard})</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="General / Rotativo">General / Rotativo para Turno</option>
+                        <optgroup label="Asignar a Supervisor Específico">
+                          {usersList.filter(u => u.role === 'supervisor').map(s => (
+                            <option key={s.id} value={s.name}>{s.name} ({s.guard} - {s.spec})</option>
+                          ))}
+                        </optgroup>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Fecha Límite / Vencimiento</label>
+                  <input 
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Notification Frequency Selector */}
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Frecuencia de Notificación / Recordatorio</label>
+                <select
+                  value={newTask.remindFrequency}
+                  onChange={(e) => setNewTask({...newTask, remindFrequency: e.target.value})}
+                  className={`w-full border rounded-xl px-3 py-2.5 font-bold focus:outline-none text-xs shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-cyan-400 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-[#003B6F] focus:border-[#003B6F]'
+                  }`}
+                >
+                  <option value="Diaria">Diaria (recordar todos los días hasta vencer)</option>
+                  <option value="2 días antes">2 días antes del vencimiento</option>
+                  <option value="3 días antes">3 días antes del vencimiento</option>
+                  <option value="Semanal">Semanal (una vez a la semana)</option>
+                </select>
+                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>La app generará alertas automáticas en el Centro de Notificaciones según esta frecuencia.</span>
+              </div>
+
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Descripción y Detalles del Pendiente</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Detalles sobre la cerradura, puntos a tratar en la reunión, repuestos necesarios..."
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs resize-none focus:outline-none shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                  }`}
+                ></textarea>
+              </div>
+
+              <div className={`flex items-center justify-end space-x-3 pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsNewTaskModalOpen(false)}
+                  className={`px-4 py-2 rounded-xl font-medium transition border shadow-2xs ${
+                    isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
+                >
+                  Guardar en Agenda Viva
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT TASK (SUPERVISORS CAN EDIT THEIR OWN TASKS & FREQUENCIES, BUT NOT DELETE) */}
+      {isEditTaskModalOpen && selectedTaskForEdit && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8 ${
+            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <h3 className="font-bold text-base">
+                {currentUser.role === 'supervisor' ? 'Editar Mi Pendiente (Frecuencia, Detalles, Estado)' : 'Editar y Reasignar Pendiente (Jefatura)'}
+              </h3>
+              <button onClick={() => setIsEditTaskModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTask} className="space-y-4 text-xs">
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Título del Pendiente</label>
+                <input 
+                  type="text"
+                  required
+                  value={selectedTaskForEdit.title}
+                  onChange={(e) => setSelectedTaskForEdit({...selectedTaskForEdit, title: e.target.value})}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Responsable / Asignación</label>
+                  {currentUser.role === 'supervisor' ? (
+                    <input 
+                      type="text"
+                      disabled
+                      value={selectedTaskForEdit.assignedTo}
+                      className={`w-full border rounded-xl px-3 py-2.5 text-xs cursor-not-allowed ${
+                        isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-500' : 'bg-slate-100 border-slate-200 text-slate-400'
+                      }`}
+                    />
+                  ) : (
+                    <select
+                      value={selectedTaskForEdit.assignedTo}
+                      onChange={(e) => setSelectedTaskForEdit({...selectedTaskForEdit, assignedTo: e.target.value})}
+                      className={`w-full border rounded-xl px-3 py-2.5 font-bold focus:outline-none text-xs shadow-inner ${
+                        isDarkMode ? 'bg-slate-950 border-slate-700 text-cyan-400 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-[#003B6F] focus:border-[#003B6F]'
+                      }`}
+                    >
+                      <option value="General / Rotativo">General para la Guardia (Rotativo)</option>
+                      {usersList.filter(u => u.role === 'supervisor').map(s => (
+                        <option key={s.id} value={s.name}>{s.name} ({s.guard} - {s.spec})</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Estado</label>
+                  <select
+                    value={selectedTaskForEdit.status}
+                    onChange={(e) => setSelectedTaskForEdit({...selectedTaskForEdit, status: e.target.value})}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs focus:outline-none shadow-inner ${
+                      isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                    }`}
+                  >
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Proceso">En Proceso</option>
+                    <option value="Completado">Completado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notification frequency edit */}
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Frecuencia de Notificación</label>
+                <select
+                  value={selectedTaskForEdit.remindFrequency || 'Diaria'}
+                  onChange={(e) => setSelectedTaskForEdit({...selectedTaskForEdit, remindFrequency: e.target.value})}
+                  className={`w-full border rounded-xl px-3 py-2.5 font-bold focus:outline-none text-xs shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-cyan-400 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-[#003B6F] focus:border-[#003B6F]'
+                  }`}
+                >
+                  <option value="Diaria">Diaria</option>
+                  <option value="2 días antes">2 días antes del vencimiento</option>
+                  <option value="3 días antes">3 días antes del vencimiento</option>
+                  <option value="Semanal">Semanal</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Descripción</label>
+                <textarea 
+                  rows="3"
+                  value={selectedTaskForEdit.description}
+                  onChange={(e) => setSelectedTaskForEdit({...selectedTaskForEdit, description: e.target.value})}
+                  className={`w-full border rounded-xl px-3.5 py-2.5 text-xs resize-none focus:outline-none shadow-inner ${
+                    isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
+                  }`}
+                ></textarea>
+              </div>
+
+              <div className={`p-3 rounded-xl border text-[11px] shadow-inner ${
+                isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'
+              }`}>
+                <span className={`font-bold block mb-0.5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>Nota de Auditoría y Seguridad:</span>
+                Puedes modificar libremente los detalles y la frecuencia de tus pendientes. Por seguridad operativa, la opción de eliminar tareas está restringida. Al guardar, se registrará la actualización por <strong>{currentUser.name}</strong>.
+              </div>
+
+              <div className={`flex items-center justify-end space-x-3 pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditTaskModalOpen(false)}
+                  className={`px-4 py-2 rounded-xl font-medium transition border shadow-2xs ${
+                    isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#003B6F] hover:bg-[#002D56] text-white px-5 py-2 rounded-xl font-bold transition shadow-xs"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
