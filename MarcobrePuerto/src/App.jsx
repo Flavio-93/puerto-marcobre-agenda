@@ -36,7 +36,8 @@ import {
   Moon,
   Key,
   Eye,
-  EyeOff
+  EyeOff,
+  Trash2
 } from 'lucide-react';
 
 // --- MARCIBRE PUERTO ROSTER (INITIAL USERS WITH USERNAMES & PASSWORDS) ---
@@ -106,7 +107,7 @@ export default function App() {
     }
   });
 
-  // Start with null currentUser to enforce login on first load if no session saved
+  // Start with null currentUser to enforce strict login on first load
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('marcobre_user_session');
@@ -119,12 +120,13 @@ export default function App() {
     return null; 
   });
 
-  const [loginUsername, setLoginUsername] = useState('fespinoza');
-  const [loginPassword, setLoginPassword] = useState('123');
+  // Empty fields by default so user must type or select deliberately
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Open login modal automatically if no user is logged in
+  // Force login modal open if no user is authenticated
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(!currentUser);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isUsersManagementModalOpen, setIsUsersManagementModalOpen] = useState(false);
@@ -171,7 +173,7 @@ export default function App() {
     remindFrequency: 'Diaria'
   });
 
-  // Universal case & accent insensitive username check for ALL users, strict password check
+  // Universal case & accent insensitive username check, strict password check
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     setLoginError('');
@@ -213,9 +215,20 @@ export default function App() {
       localStorage.removeItem('marcobre_user_session');
     } catch {}
     setCurrentUser(null);
-    setLoginUsername('fespinoza');
-    setLoginPassword('123');
+    setLoginUsername('');
+    setLoginPassword('');
     setIsLoginModalOpen(true);
+  };
+
+  // Delete task function restricted strictly to Admin (Flavio Espinoza) and Superintendente
+  const handleDeleteTask = (taskId) => {
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superintendente')) {
+      alert('Acceso restringido. Solo el Administrador (Flavio Espinoza) y el Superintendente pueden eliminar eventos.');
+      return;
+    }
+    if (window.confirm('¿Está seguro de eliminar este registro de la agenda de forma permanente?')) {
+      setTasks(tasks.filter(t => t.id !== taskId));
+    }
   };
 
   const activeGuardsInfo = useMemo(() => {
@@ -578,10 +591,12 @@ export default function App() {
                     </div>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       {currentUser.role === 'admin'
-                        ? 'Eres el creador y administrador general de la App. Tienes control absoluto para cambiar las contraseñas de cualquier supervisor o jefe.'
+                        ? 'Eres el creador y administrador general de la App. Tienes control absoluto para cambiar contraseñas y eliminar eventos.'
+                        : currentUser.role === 'superintendente'
+                        ? 'Superintendente de Operaciones Puerto. Tienes privilegios para editar, reasignar y eliminar eventos de la agenda.'
                         : currentUser.role === 'supervisor' 
-                        ? `Registras pendientes para tu guardia (${currentUser.guard}). Puedes editar tus propios registros, pero no eliminarlos.` 
-                        : 'Tienes privilegios de Superintendencia y Jefatura: puedes registrar, editar y reasignar tareas a cualquier supervisor del puerto.'}
+                        ? `Registras pendientes para tu guardia (${currentUser.guard}).` 
+                        : 'Tienes privilegios de Jefatura: puedes registrar, editar y reasignar tareas a cualquier supervisor del puerto.'}
                     </p>
                   </div>
                 </div>
@@ -684,6 +699,8 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTasks.map(task => {
                 const canEditTask = currentUser && (currentUser.role === 'admin' || currentUser.role === 'jefe' || currentUser.role === 'superintendente' || task.assignedTo === currentUser.name || task.createdBy === currentUser.name);
+                const canDeleteTask = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superintendente');
+
                 return (
                   <div key={task.id} className={`border rounded-2xl p-5 shadow-2xs flex flex-col justify-between transition relative group ${
                     isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'
@@ -747,22 +764,34 @@ export default function App() {
                           <span>{task.status}</span>
                         </button>
 
-                        {canEditTask && (
-                          <button
-                            onClick={() => {
-                              setSelectedTaskForEdit(task);
-                              setIsEditTaskModalOpen(true);
-                            }}
-                            className={`text-xs px-3 py-1.5 rounded-lg transition flex items-center space-x-1 border shadow-2xs ${
-                              isDarkMode 
-                                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                            }`}
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>{currentUser?.role === 'supervisor' ? 'Editar' : 'Editar / Reasignar'}</span>
-                          </button>
-                        )}
+                        <div className="flex items-center space-x-1.5">
+                          {canEditTask && (
+                            <button
+                              onClick={() => {
+                                setSelectedTaskForEdit(task);
+                                setIsEditTaskModalOpen(true);
+                              }}
+                              className={`text-xs px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1 border shadow-2xs ${
+                                isDarkMode 
+                                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                              }`}
+                              title="Editar / Reasignar"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {canDeleteTask && (
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="text-xs px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1 border bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/30 shadow-2xs"
+                              title="Eliminar evento (Admin y Superintendente)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                     </div>
@@ -816,9 +845,20 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="text-right">
-                      <span className={`text-[11px] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Responsable Actual:</span>
-                      <strong className={`text-xs ${isDarkMode ? 'text-cyan-300' : 'text-[#003B6F]'}`}>{t.assignedTo}</strong>
+                    <div className="text-right flex items-center space-x-3">
+                      <div>
+                        <span className={`text-[11px] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Responsable Actual:</span>
+                        <strong className={`text-xs ${isDarkMode ? 'text-cyan-300' : 'text-[#003B6F]'}`}>{t.assignedTo}</strong>
+                      </div>
+                      {currentUser && (currentUser.role === 'admin' || currentUser.role === 'superintendente') && (
+                        <button
+                          onClick={() => handleDeleteTask(t.id)}
+                          className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/30"
+                          title="Eliminar evento"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -974,9 +1014,9 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: LOGIN */}
+      {/* MODAL: LOGIN STRICTLY REQUIRED ON LAUNCH */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 ${
             isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
           }`}>
@@ -1006,6 +1046,7 @@ export default function App() {
                     isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
                   }`}
                 >
+                  <option value="" disabled>-- Seleccione su Usuario / Perfil --</option>
                   <optgroup label="Administrador de la App">
                     <option value="fespinoza">Flavio Espinoza (Creador / Admin - @fespinoza)</option>
                   </optgroup>
@@ -1053,7 +1094,7 @@ export default function App() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>El usuario no distingue mayúsculas, minúsculas ni tildes. La contraseña (ej. <strong>123</strong>) sí distingue mayúsculas y minúsculas estrictamente.</span>
+                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>El usuario no distingue mayúsculas, minúsculas ni tildes. La contraseña distingue mayúsculas y minúsculas estrictamente.</span>
               </div>
 
               {loginError && (
@@ -1355,7 +1396,7 @@ export default function App() {
                 isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'
               }`}>
                 <span className={`font-bold block mb-0.5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}>Nota de Auditoría y Seguridad:</span>
-                Puedes modificar libremente los detalles y la frecuencia de tus pendientes. Por seguridad operativa, la opción de eliminar tareas está restringida. Al guardar, se registrará la actualización por <strong>{currentUser?.name}</strong>.
+                Puedes modificar libremente los detalles y la frecuencia de tus pendientes. Al guardar, se registrará la actualización por <strong>{currentUser?.name}</strong>.
               </div>
 
               <div className={`flex items-center justify-end space-x-3 pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
