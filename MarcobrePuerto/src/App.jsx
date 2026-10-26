@@ -66,13 +66,13 @@ export default function App() {
       const saved = localStorage.getItem('marcobre_user_session');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // We will match it once usersList loads from Supabase
         return parsed;
       }
     } catch {}
     return null; 
   });
 
+  // Completely blank fields for manual typing
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -86,7 +86,6 @@ export default function App() {
   useEffect(() => {
     fetchDataFromCloud();
 
-    // Subscribe to real-time changes in Supabase
     const tasksSubscription = supabase
       .channel('public:tareas')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas' }, payload => {
@@ -109,11 +108,9 @@ export default function App() {
 
   const fetchDataFromCloud = async () => {
     try {
-      // Fetch Users
       const { data: cloudUsers, error: errUsers } = await supabase.from('usuarios').select('*');
       if (!errUsers && cloudUsers && cloudUsers.length > 0) {
         setUsersList(cloudUsers);
-        // Restore active session object if exists
         const savedSession = localStorage.getItem('marcobre_user_session');
         if (savedSession) {
           const parsed = JSON.parse(savedSession);
@@ -122,10 +119,8 @@ export default function App() {
         }
       }
 
-      // Fetch Tasks
       const { data: cloudTasks, error: errTasks } = await supabase.from('tareas').select('*');
       if (!errTasks && cloudTasks) {
-        // Map snake_case database columns to frontend camelCase
         const formattedTasks = cloudTasks.map(t => ({
           id: t.id,
           title: t.title,
@@ -150,7 +145,6 @@ export default function App() {
     }
   };
 
-  // If no user is authenticated after loading, open login modal
   useEffect(() => {
     if (!isLoading && !currentUser) {
       setIsLoginModalOpen(true);
@@ -192,7 +186,7 @@ export default function App() {
     remindFrequency: 'Diaria'
   });
 
-  // Universal case & accent insensitive username check, strict password check
+  // Strict manual username and password validation
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     setLoginError('');
@@ -220,7 +214,6 @@ export default function App() {
     }));
   };
 
-  // Update password in Supabase cloud
   const handleUpdateUserPassword = async (userId, newPass) => {
     if (currentUser?.username?.toLowerCase() !== 'fespinoza') {
       alert('Acceso denegado. Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
@@ -248,7 +241,6 @@ export default function App() {
     setIsLoginModalOpen(true);
   };
 
-  // Delete task in Supabase cloud (Instant sync for everyone)
   const handleDeleteTask = async (taskId) => {
     if (!currentUser || (currentUser.username?.toLowerCase() !== 'fespinoza' && currentUser.role !== 'superintendente')) {
       alert('Acceso restringido. Solo el Administrador (Flavio Espinoza) y el Superintendente pueden eliminar eventos.');
@@ -317,7 +309,6 @@ export default function App() {
     });
   }, [tasks, taskFilter, searchQuery, currentUser]);
 
-  // Create task and insert into Supabase cloud
   const handleCreateTask = async (e) => {
     e.preventDefault();
     if (!newTask.title || !currentUser) return;
@@ -379,7 +370,6 @@ export default function App() {
     }
   };
 
-  // Update task in Supabase cloud
   const handleUpdateTask = async (e) => {
     e.preventDefault();
     if (!selectedTaskForEdit || !currentUser) return;
@@ -415,7 +405,6 @@ export default function App() {
     }
   };
 
-  // Toggle status online
   const toggleTaskStatus = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'Pendiente' ? 'En Proceso' : currentStatus === 'En Proceso' ? 'Completado' : 'Pendiente';
     
@@ -483,7 +472,6 @@ export default function App() {
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Credentials Manager: STRICTLY VISIBLE ONLY WHEN USERNAME IS fespinoza */}
           {currentUser?.username?.toLowerCase() === 'fespinoza' && (
             <button
               onClick={() => setIsUsersManagementModalOpen(true)}
@@ -1079,7 +1067,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: LOGIN STRICTLY REQUIRED ON LAUNCH */}
+      {/* MODAL: LOGIN WITH MANUAL TYPING (NO OPTIONS, BLANK FIELDS) */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 ${
@@ -1099,46 +1087,21 @@ export default function App() {
 
             <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
               <div>
-                <label className={`block font-semibold mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Seleccione su Perfil o escriba su usuario:</label>
-                <select
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Usuario *</label>
+                <input 
+                  type="text"
+                  required
                   value={loginUsername}
-                  onChange={(e) => {
-                    setLoginUsername(e.target.value);
-                    setLoginPassword('');
-                  }}
-                  className={`w-full border rounded-xl px-3 py-3 focus:outline-none text-xs font-medium shadow-inner ${
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  placeholder="Ingrese su usuario (ej: cnanfuñay, fespinoza)"
+                  className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none shadow-inner font-mono ${
                     isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
                   }`}
-                >
-                  <option value="" disabled>-- Seleccione su Usuario / Perfil --</option>
-                  <optgroup label="Administrador de la App">
-                    <option value="fespinoza">Flavio Espinoza (Creador / Admin - @fespinoza)</option>
-                  </optgroup>
-                  <optgroup label="Superintendencia y Jefatura Puerto">
-                    <option value="fpaolillo">Francisco Javier Paolillo Tapia (Superintendente - @fpaolillo)</option>
-                    <option value="mcaceres">Manuel Antonio Caceres Falconi (Jefe de Operaciones - @mcaceres)</option>
-                  </optgroup>
-                  <optgroup label="Guardia A">
-                    <option value="cnanfuñay">Cronwel Vladimir Nanfuñay Lora (Planta - @cnanfuñay)</option>
-                    <option value="jhuaman">Juan Carlos Huaman Quispe (Descarga - @jhuaman)</option>
-                  </optgroup>
-                  <optgroup label="Guardia B">
-                    <option value="cmachuca">Cesar Arnaldo Machuca Polo (Planta - @cmachuca)</option>
-                    <option value="ydiaz">Yofre Díaz Guarderas (Descarga - @ydiaz)</option>
-                  </optgroup>
-                  <optgroup label="Guardia C">
-                    <option value="jchambergo">Jorge Marco Chambergo Vargas (Planta - @jchambergo)</option>
-                    <option value="vvacante">[Vacante Descarga] (Descarga - @vvacante)</option>
-                  </optgroup>
-                  <optgroup label="Guardia D">
-                    <option value="crudas">Carlos Alberto Rudas Ramirez (Planta - @crudas)</option>
-                    <option value="wlopez">William Jose Lopez Quiroz (Descarga - @wlopez)</option>
-                  </optgroup>
-                </select>
+                />
               </div>
 
               <div>
-                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Contraseña de Acceso:</label>
+                <label className={`block font-semibold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Contraseña *</label>
                 <div className="relative">
                   <input 
                     type={showPassword ? 'text' : 'password'}
@@ -1158,7 +1121,7 @@ export default function App() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>La contraseña se valida en tiempo real con la base de datos centralizada.</span>
+                <span className={`text-[10px] mt-1 block ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>Escriba su usuario exacto. La contraseña distingue mayúsculas y minúsculas.</span>
               </div>
 
               {loginError && (
