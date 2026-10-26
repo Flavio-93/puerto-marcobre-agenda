@@ -201,7 +201,7 @@ export default function App() {
   };
 
   const handleUpdateUserPassword = (userId, newPass) => {
-    if (currentUser?.role !== 'admin') {
+    if (currentUser?.username !== 'fespinoza') {
       alert('Acceso denegado. Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
       return;
     }
@@ -221,7 +221,7 @@ export default function App() {
 
   // Delete task restricted strictly to Admin (Flavio Espinoza) and Superintendente
   const handleDeleteTask = (taskId) => {
-    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superintendente')) {
+    if (!currentUser || (currentUser.username !== 'fespinoza' && currentUser.role !== 'superintendente')) {
       alert('Acceso restringido. Solo el Administrador (Flavio Espinoza) y el Superintendente pueden eliminar eventos.');
       return;
     }
@@ -409,8 +409,8 @@ export default function App() {
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Credentials Manager: STRICTLY VISIBLE ONLY TO ADMIN FLAVIO ESPINOZA */}
-          {currentUser?.role === 'admin' && (
+          {/* Credentials Manager: STRICTLY VISIBLE ONLY WHEN USERNAME IS fespinoza */}
+          {currentUser?.username?.toLowerCase() === 'fespinoza' && (
             <button
               onClick={() => setIsUsersManagementModalOpen(true)}
               className={`hidden md:flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
@@ -699,7 +699,7 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTasks.map(task => {
                 const canEditTask = currentUser && (currentUser.role === 'admin' || currentUser.role === 'jefe' || currentUser.role === 'superintendente' || task.assignedTo === currentUser.name || task.createdBy === currentUser.name);
-                const canDeleteTask = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superintendente');
+                const canDeleteTask = currentUser && (currentUser.username === 'fespinoza' || currentUser.role === 'superintendente');
 
                 return (
                   <div key={task.id} className={`border rounded-2xl p-5 shadow-2xs flex flex-col justify-between transition relative group ${
@@ -850,7 +850,7 @@ export default function App() {
                         <span className={`text-[11px] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Responsable Actual:</span>
                         <strong className={`text-xs ${isDarkMode ? 'text-cyan-300' : 'text-[#003B6F]'}`}>{t.assignedTo}</strong>
                       </div>
-                      {currentUser && (currentUser.role === 'admin' || currentUser.role === 'superintendente') && (
+                      {currentUser && (currentUser.username === 'fespinoza' || currentUser.role === 'superintendente') && (
                         <button
                           onClick={() => handleDeleteTask(t.id)}
                           className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/30"
@@ -934,8 +934,8 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CREDENTIALS MANAGER (STRICTLY ADMIN FLAVIO ESPINOZA EXCLUSIVE) */}
-      {isUsersManagementModalOpen && currentUser?.role === 'admin' && (
+      {/* MODAL: CREDENTIALS MANAGER (STRICTLY FLAVIO ESPINOZA EXCLUSIVE) */}
+      {isUsersManagementModalOpen && currentUser?.username?.toLowerCase() === 'fespinoza' && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
           <div className={`border rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 ${
             isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
