@@ -107,7 +107,7 @@ export default function App() {
     }
   });
 
-  // Start with null currentUser to enforce strict login on first load
+  // Start with null currentUser to enforce strict login
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('marcobre_user_session');
@@ -120,13 +120,12 @@ export default function App() {
     return null; 
   });
 
-  // Empty fields by default so user must type or select deliberately
+  // Empty fields by default so login fields are completely blank
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Force login modal open if no user is authenticated
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(!currentUser);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isUsersManagementModalOpen, setIsUsersManagementModalOpen] = useState(false);
@@ -203,7 +202,7 @@ export default function App() {
 
   const handleUpdateUserPassword = (userId, newPass) => {
     if (currentUser?.role !== 'admin') {
-      alert('Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
+      alert('Acceso denegado. Solo el Administrador (Flavio Espinoza) puede cambiar las contraseñas.');
       return;
     }
     const updated = usersList.map(u => u.id === userId ? { ...u, password: newPass } : u);
@@ -220,7 +219,7 @@ export default function App() {
     setIsLoginModalOpen(true);
   };
 
-  // Delete task function restricted strictly to Admin (Flavio Espinoza) and Superintendente
+  // Delete task restricted strictly to Admin (Flavio Espinoza) and Superintendente
   const handleDeleteTask = (taskId) => {
     if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superintendente')) {
       alert('Acceso restringido. Solo el Administrador (Flavio Espinoza) y el Superintendente pueden eliminar eventos.');
@@ -410,18 +409,19 @@ export default function App() {
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          <button
-            onClick={() => setIsUsersManagementModalOpen(true)}
-            className={`hidden md:flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
-              currentUser?.role === 'admin'
-                ? (isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/10 text-[#003B6F] border-[#003B6F]/30')
-                : (isDarkMode ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700')
-            }`}
-            title="Gestión de Credenciales (Solo Administrador)"
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span>Credenciales {currentUser?.role === 'admin' && '(Admin)'}</span>
-          </button>
+          {/* Credentials Manager: STRICTLY VISIBLE ONLY TO ADMIN FLAVIO ESPINOZA */}
+          {currentUser?.role === 'admin' && (
+            <button
+              onClick={() => setIsUsersManagementModalOpen(true)}
+              className={`hidden md:flex items-center space-x-1.5 px-3 py-2.5 rounded-xl transition border shadow-2xs text-xs font-semibold ${
+                isDarkMode ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-[#003B6F]/10 text-[#003B6F] border-[#003B6F]/30'
+              }`}
+              title="Gestión de Credenciales (Solo Administrador Flavio Espinoza)"
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>Directorio (Admin)</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsNotificationModalOpen(true)}
@@ -444,7 +444,7 @@ export default function App() {
             <div 
               onClick={() => {
                 setLoginUsername(currentUser.username);
-                setLoginPassword(currentUser.password || '123');
+                setLoginPassword('');
                 setLoginError('');
                 setIsLoginModalOpen(true);
               }}
@@ -591,7 +591,7 @@ export default function App() {
                     </div>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       {currentUser.role === 'admin'
-                        ? 'Eres el creador y administrador general de la App. Tienes control absoluto para cambiar contraseñas y eliminar eventos.'
+                        ? 'Eres el administrador general (Flavio Espinoza). Controlas el directorio de credenciales y la eliminación de eventos.'
                         : currentUser.role === 'superintendente'
                         ? 'Superintendente de Operaciones Puerto. Tienes privilegios para editar, reasignar y eliminar eventos de la agenda.'
                         : currentUser.role === 'supervisor' 
@@ -606,7 +606,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       setLoginUsername(currentUser.username);
-                      setLoginPassword(currentUser.password || '123');
+                      setLoginPassword('');
                       setLoginError('');
                       setIsLoginModalOpen(true);
                     }}
@@ -934,8 +934,8 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CREDENTIALS MANAGER (ADMIN FLAVIO ESPINOZA) */}
-      {isUsersManagementModalOpen && (
+      {/* MODAL: CREDENTIALS MANAGER (STRICTLY ADMIN FLAVIO ESPINOZA EXCLUSIVE) */}
+      {isUsersManagementModalOpen && currentUser?.role === 'admin' && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center p-4">
           <div className={`border rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 ${
             isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
@@ -943,23 +943,16 @@ export default function App() {
             <div className={`flex items-center justify-between border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
               <div className="flex items-center space-x-2">
                 <Key className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`} />
-                <h3 className="font-bold text-base">Gestión de Credenciales (Administrador: Flavio Espinoza)</h3>
+                <h3 className="font-bold text-base">Directorio y Gestión de Credenciales (Administrador: Flavio Espinoza)</h3>
               </div>
               <button onClick={() => setIsUsersManagementModalOpen(false)} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {currentUser?.role !== 'admin' ? (
-              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 p-4 rounded-xl text-xs font-semibold space-y-1">
-                <p>Acceso Restringido.</p>
-                <p>Solo el Creador y Administrador de la App (**Flavio Espinoza - @fespinoza**) puede modificar las contraseñas de los usuarios. Tu usuario actual es <strong>{currentUser?.name || 'Ninguno'}</strong>.</p>
-              </div>
-            ) : (
-              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Hola Flavio. Aquí puedes ver los usuarios (primer inicial + apellido paterno, ej. @cnanfuñay) y actualizar las contraseñas de cualquier supervisor, jefe o superintendente. Haz clic fuera del campo para guardar los cambios.
-              </p>
-            )}
+            <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Hola Flavio. Este directorio es exclusivo para ti. Aquí puedes ver y actualizar las contraseñas de cualquier supervisor, jefe o superintendente. Haz clic fuera del campo de contraseña para guardar los cambios automáticamente.
+            </p>
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
               {usersList.map(u => (
@@ -986,17 +979,15 @@ export default function App() {
                     <div className="relative">
                       <input 
                         type="text"
-                        disabled={currentUser?.role !== 'admin'}
                         defaultValue={u.password || '123'}
                         onBlur={(e) => handleUpdateUserPassword(u.id, e.target.value)}
                         className={`w-28 border rounded-lg px-2 py-1.5 text-xs font-mono font-bold shadow-inner ${
-                          currentUser?.role !== 'admin' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-slate-800' :
                           isDarkMode ? 'bg-slate-900 border-slate-700 text-cyan-300' : 'bg-white border-slate-300 text-[#003B6F]'
                         }`}
-                        title={currentUser?.role === 'admin' ? 'Edita y haz clic fuera para guardar la nueva contraseña' : 'Solo Flavio Espinoza puede editar'}
+                        title="Edita y haz clic fuera para guardar la nueva contraseña"
                       />
                     </div>
-                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>({currentUser?.role === 'admin' ? 'Editable' : 'Bloqueado'})</span>
+                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>(Editable)</span>
                   </div>
                 </div>
               ))}
@@ -1016,7 +1007,7 @@ export default function App() {
 
       {/* MODAL: LOGIN STRICTLY REQUIRED ON LAUNCH */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className={`border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 ${
             isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
           }`}>
@@ -1039,8 +1030,7 @@ export default function App() {
                   value={loginUsername}
                   onChange={(e) => {
                     setLoginUsername(e.target.value);
-                    const found = usersList.find(u => u.username === e.target.value);
-                    if (found) setLoginPassword(found.password || '123');
+                    setLoginPassword(''); // Keeps password blank when switching user
                   }}
                   className={`w-full border rounded-xl px-3 py-3 focus:outline-none text-xs font-medium shadow-inner ${
                     isDarkMode ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-500' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#003B6F]'
@@ -1103,15 +1093,7 @@ export default function App() {
                 </div>
               )}
 
-              <div className={`flex items-center justify-between pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-                <button
-                  type="button"
-                  onClick={() => setIsUsersManagementModalOpen(true)}
-                  className={`text-xs font-semibold underline ${isDarkMode ? 'text-cyan-400' : 'text-[#003B6F]'}`}
-                >
-                  Directorio de Credenciales
-                </button>
-
+              <div className={`flex items-center justify-end pt-3 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
                 <div className="flex items-center space-x-2">
                   {currentUser && (
                     <button
