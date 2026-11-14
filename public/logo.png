@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <rect width="100%" height="100%" fill="none"/>
+  <!-- Simbolo Geométrico Marcobre -->
+  <path d="M 20 20 L 50 75 L 80 20 Z" fill="#2b5c8f"/>
+  <path d="M 50 75 L 65 48 L 80 75 Z" fill="#c13127"/>
+  <!-- Tipografía -->
+  <text x="100" y="60" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="40" fill="#2b5c8f" letter-spacing="1">MARCOBRE</text>
+  <text x="100" y="82" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14" fill="#c13127" letter-spacing="4">TERMINAL PUERTO</text>
+</svg>
+

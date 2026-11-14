@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --color-marcobre-blue: #2b5c8f;
+    --color-marcobre-darkblue: #1c3d61;
+    --color-marcobre-rust: #c13127;
+    --color-marcobre-rustdark: #9e251e;
+  }
+}
+
+/* Clases utilitarias personalizadas para Marcobre */
+.bg-marcobre-blue {
+  background-color: #2b5c8f;
+}
+.text-marcobre-blue {
+  color: #2b5c8f;
+}
+.border-marcobre-blue {
+  border-color: #2b5c8f;
+}
+.hover\:bg-marcobre-darkblue:hover {
+  background-color: #1e4570;
+}
+
+.bg-marcobre-rust {
+  background-color: #c13127;
+}
+.text-marcobre-rust {
+  color: #c13127;
+}
+.border-marcobre-rust {
+  border-color: #c13127;
+}
+.hover\:bg-marcobre-rustdark:hover {
+  background-color: #9e251e;
+}
+
+/* Touch-friendly optimizations */
+button, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Scrollbars sutiles para campo */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
