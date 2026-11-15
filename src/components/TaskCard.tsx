@@ -10,11 +10,13 @@ import {
   CheckCircle2, 
   XCircle, 
   Lock, 
-  Globe,
-  Bell,
-  History,
-  RotateCcw,
-  MessageSquare
+  Globe, 
+  Bell, 
+  History, 
+  RotateCcw, 
+  MessageSquare,
+  Clock,
+  Calendar
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -290,8 +292,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({ tarea }) => {
             )}
           </div>
 
-          {/* Responsables */}
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg text-[11px] space-y-1 mb-3 border border-slate-100 dark:border-slate-800">
+          {/* Responsables y Fechas */}
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg text-[11px] space-y-1.5 mb-3 border border-slate-100 dark:border-slate-800">
+            {/* Fechas de Creación y Límite */}
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-200/60 dark:border-slate-800/80">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-slate-400" />
+                Fecha:
+              </span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {tarea.created_at ? new Date(tarea.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hoy'}
+              </span>
+            </div>
+
+            {tarea.fecha_limite && (
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-200/60 dark:border-slate-800/80">
+                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="w-3 h-3" />
+                  Límite / Relevo:
+                </span>
+                <span className="font-semibold text-amber-700 dark:text-amber-300">
+                  {new Date(tarea.fecha_limite).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
               <span>Creado por:</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[170px]">
