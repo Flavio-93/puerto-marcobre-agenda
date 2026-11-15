@@ -11,7 +11,9 @@ import {
   UserCheck, 
   Globe, 
   Lock,
-  ListTodo
+  ListTodo,
+  Search,
+  X
 } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
@@ -21,11 +23,26 @@ export const KanbanBoard: React.FC = () => {
   // Vista predeterminada: 'mis_asignadas' al iniciar la app
   const [vistaTareas, setVistaTareas] = useState<'mis_asignadas' | 'general' | 'mis_personales'>('mis_asignadas');
   const [filtroGuardiaSoloActivas, setFiltroGuardiaSoloActivas] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
 
   // Filtrado de Tareas
   const tareasFiltradas = tareas.filter((tarea) => {
     // Las canceladas salen del Kanban principal hacia el módulo Archivo (Requisito 6)
     if (tarea.estado === 'Cancelado') return false;
+
+    // Filtro por Buscador (Título, Descripción, Creador, Asignado, Etiquetas)
+    if (busqueda.trim()) {
+      const q = busqueda.trim().toLowerCase();
+      const coincideTitulo = tarea.titulo.toLowerCase().includes(q);
+      const coincideDesc = tarea.descripcion?.toLowerCase().includes(q) || false;
+      const coincideCreador = tarea.creador?.nombre_completo.toLowerCase().includes(q) || false;
+      const coincideAsignado = tarea.asignado?.nombre_completo.toLowerCase().includes(q) || false;
+      const coincideEtiquetas = tarea.etiquetas?.some(tag => tag.toLowerCase().includes(q)) || false;
+
+      if (!coincideTitulo && !coincideDesc && !coincideCreador && !coincideAsignado && !coincideEtiquetas) {
+        return false;
+      }
+    }
 
     // 1. Selector Principal de Vistas
     if (vistaTareas === 'mis_asignadas') {
@@ -74,6 +91,29 @@ export const KanbanBoard: React.FC = () => {
     <div className="space-y-4">
       {/* Barra de Filtros Rápidos de Campo (Mobile-First) */}
       <div className="bg-white dark:bg-slate-900 p-2.5 sm:p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-800 space-y-2.5 w-full overflow-hidden">
+        {/* Campo de Búsqueda Rápida */}
+        <div className="relative w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-4 h-4" />
+          </div>
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por tarea, supervisor, equipo, etiqueta..."
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2b5c8f] transition"
+          />
+          {busqueda && (
+            <button
+              type="button"
+              onClick={() => setBusqueda('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* Selector Principal de Vistas: Mis Tareas Asignadas (Inicio) / General / Generadas por Mí */}
         <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full">
           <button
