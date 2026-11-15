@@ -107,7 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const esJefatura = usuario?.rol === 'superintendente' || usuario?.rol === 'jefe';
-  const esAdmin = usuario?.username === 'fespinoza' || usuario?.rol === 'superintendente';
+  // Exclusividad total: SOLO Flavio Espinoza tiene privilegios de Administrador General
+  const esAdmin = usuario?.username === 'fespinoza';
 
   // Función exclusiva para que el Administrador cambie contraseñas
   const cambiarPasswordUsuario = async (targetUsername: string, nuevaClave: string): Promise<{ success: boolean; error?: string }> => {
