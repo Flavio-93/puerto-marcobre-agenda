@@ -21,7 +21,7 @@ export const KanbanBoard: React.FC = () => {
   const { usuario, esJefatura } = useAuth();
 
   // Vista predeterminada: 'mis_asignadas' al iniciar la app
-  const [vistaTareas, setVistaTareas] = useState<'mis_asignadas' | 'general' | 'mis_personales'>('mis_asignadas');
+  const [vistaTareas, setVistaTareas] = useState<'mis_asignadas' | 'general' | 'mis_personales' | 'completadas'>('mis_asignadas');
   const [filtroGuardiaSoloActivas, setFiltroGuardiaSoloActivas] = useState(false);
   const [busqueda, setBusqueda] = useState('');
 
@@ -46,14 +46,20 @@ export const KanbanBoard: React.FC = () => {
 
     // 1. Selector Principal de Vistas
     if (vistaTareas === 'mis_asignadas') {
-      // Solo las tareas en las que este usuario está asignado (las que tiene que hacer)
-      if (tarea.asignado_a_id !== usuario?.id) return false;
+      // Solo las tareas en las que este usuario está asignado y que estén pendientes (Por Hacer / En Progreso)
+      if (tarea.asignado_a_id !== usuario?.id || tarea.estado === 'Completado') return false;
     } else if (vistaTareas === 'mis_personales') {
       // Tareas generadas por mí como apunte o tarea personal
       if (tarea.creador_id !== usuario?.id || tarea.visibilidad !== 'Personal') return false;
     } else if (vistaTareas === 'general') {
-      // Todas las tareas en general de todos
-      // (Si no es jefatura, las tareas personales ajenas se ocultan por RLS)
+      // Todas las tareas en general de todos activas (pendientes)
+      if (tarea.estado === 'Completado') return false;
+      if (tarea.visibilidad === 'Personal' && tarea.creador_id !== usuario?.id && !esJefatura) {
+        return false;
+      }
+    } else if (vistaTareas === 'completadas') {
+      // Solo tareas completadas en turno
+      if (tarea.estado !== 'Completado') return false;
       if (tarea.visibilidad === 'Personal' && tarea.creador_id !== usuario?.id && !esJefatura) {
         return false;
       }
@@ -71,21 +77,6 @@ export const KanbanBoard: React.FC = () => {
 
     return true;
   });
-
-  const columnas: { estado: EstadoTarea; titulo: string; color: string; icon: React.ReactNode }[] = [
-    {
-      estado: 'Por Hacer',
-      titulo: 'Tareas en Espera / Activas',
-      color: 'border-t-4 border-[#2b5c8f] bg-[#2b5c8f]/5',
-      icon: <Clock className="w-4 h-4 text-[#2b5c8f]" />,
-    },
-    {
-      estado: 'Completado',
-      titulo: 'Completado en Turno',
-      color: 'border-t-4 border-emerald-500 bg-emerald-500/5',
-      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-    },
-  ];
 
   return (
     <div className="space-y-4">
@@ -114,12 +105,12 @@ export const KanbanBoard: React.FC = () => {
           )}
         </div>
 
-        {/* Selector Principal de Vistas: Mis Tareas Asignadas (Inicio) / General / Generadas por Mí */}
-        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full">
+        {/* Selector Principal de Vistas: Mis Tareas Asignadas (Inicio) / General / Generadas por Mí / Hecho */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full">
           <button
             type="button"
             onClick={() => setVistaTareas('mis_asignadas')}
-            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
+            className={`py-2 px-0.5 rounded-lg text-[10px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'mis_asignadas'
                 ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -132,7 +123,7 @@ export const KanbanBoard: React.FC = () => {
           <button
             type="button"
             onClick={() => setVistaTareas('general')}
-            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
+            className={`py-2 px-0.5 rounded-lg text-[10px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'general'
                 ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -145,7 +136,7 @@ export const KanbanBoard: React.FC = () => {
           <button
             type="button"
             onClick={() => setVistaTareas('mis_personales')}
-            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
+            className={`py-2 px-0.5 rounded-lg text-[10px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'mis_personales'
                 ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -153,6 +144,19 @@ export const KanbanBoard: React.FC = () => {
           >
             <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span className="truncate">Personal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setVistaTareas('completadas')}
+            className={`py-2 px-0.5 rounded-lg text-[10px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
+              vistaTareas === 'completadas'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Hecho</span>
           </button>
         </div>
 
@@ -178,44 +182,55 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Tablero Kanban de Columnas Activas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {columnas.map((col) => {
-          const tareasColumna = tareasFiltradas.filter((t) => t.estado === col.estado);
-
-          return (
-            <div
-              key={col.estado}
-              className={`rounded-xl bg-slate-50/80 dark:bg-slate-900/60 p-3 sm:p-4 border border-slate-200 dark:border-slate-800 flex flex-col min-h-[500px] ${col.color}`}
-            >
-              {/* Encabezado de Columna */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  {col.icon}
-                  <h2 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-white">
-                    {col.titulo}
-                  </h2>
+      {/* Contenedor de Tareas / Tablero */}
+      <div className="w-full">
+        <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-[500px]">
+          {/* Encabezado de la lista actual */}
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              {vistaTareas === 'completadas' ? (
+                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-950/60 rounded-lg text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
-                <span className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {tareasColumna.length}
-                </span>
-              </div>
+              ) : (
+                <div className="p-1.5 bg-blue-50 dark:bg-blue-950/60 rounded-lg text-[#2b5c8f] dark:text-blue-400">
+                  <Clock className="w-4 h-4" />
+                </div>
+              )}
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-white">
+                {vistaTareas === 'mis_asignadas' && 'Mis Tareas por Cumplir'}
+                {vistaTareas === 'general' && 'Todas las Tareas Activas'}
+                {vistaTareas === 'mis_personales' && 'Mis Tareas Personales'}
+                {vistaTareas === 'completadas' && 'Tareas Completadas en Turno'}
+              </h2>
+            </div>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+              vistaTareas === 'completadas' 
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                : 'bg-blue-100 text-[#2b5c8f] dark:bg-blue-950 dark:text-blue-300'
+            }`}>
+              {tareasFiltradas.length} {tareasFiltradas.length === 1 ? 'tarea' : 'tareas'}
+            </span>
+          </div>
 
-              {/* Lista de Tarjetas */}
-              <div className="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-250px)] pr-1">
-                {tareasColumna.length === 0 ? (
-                  <div className="h-40 flex flex-col items-center justify-center text-slate-400 text-xs border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center">
-                    <p>No hay tareas en esta etapa.</p>
-                  </div>
-                ) : (
-                  tareasColumna.map((tarea) => (
-                    <TaskCard key={tarea.id} tarea={tarea} />
-                  ))
+          {/* Lista de Tarjetas */}
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
+            {tareasFiltradas.length === 0 ? (
+              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center">
+                <p className="font-medium">No hay tareas en esta sección.</p>
+                {busqueda && (
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Prueba cambiando el término de búsqueda.
+                  </p>
                 )}
               </div>
-            </div>
-          );
-        })}
+            ) : (
+              tareasFiltradas.map((tarea) => (
+                <TaskCard key={tarea.id} tarea={tarea} />
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
