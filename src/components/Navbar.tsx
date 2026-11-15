@@ -13,7 +13,10 @@ import {
   Users, 
   Kanban, 
   Archive, 
-  KeyRound
+  KeyRound,
+  Menu,
+  X,
+  Plus
 } from 'lucide-react';
 import { AdminUsuariosModal } from './AdminUsuariosModal';
 import { InstallPwaButton } from './InstallPwaButton';
@@ -35,6 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const [modalGuardias, setModalGuardias] = useState(false);
   const [modalAdminPass, setModalAdminPass] = useState(false);
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [g1Temp, setG1Temp] = useState<TipoGuardia>(guardiasActivas.guardia_1);
   const [g2Temp, setG2Temp] = useState<TipoGuardia>(guardiasActivas.guardia_2);
 
@@ -51,156 +55,196 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#2b5c8f] text-white shadow-md border-b border-[#1e4570] transition-colors dark:bg-[#1a3857] dark:border-slate-800">
+      <header className="sticky top-0 z-40 bg-[#2b5c8f] text-white shadow-md border-b border-[#1e4570] transition-colors dark:bg-[#1a3857] dark:border-slate-800 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* LOGO & Identidad Corporativa */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center bg-white p-1.5 rounded-lg shadow-sm border border-slate-200">
+          {/* BARRA PRINCIPAL */}
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+            {/* Logo e Identidad */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center justify-center bg-white p-1 rounded-lg shadow-xs border border-slate-200 shrink-0">
                 <img 
                   src="/logo.png" 
                   alt="Marcobre - Puerto" 
                   onError={(e) => {
-                    // Fallback visual si el usuario aún no coloca su logo.png
                     (e.target as HTMLElement).style.display = 'none';
                     const parent = (e.target as HTMLElement).parentElement;
                     if (parent && !parent.querySelector('.logo-fallback')) {
                       const span = document.createElement('span');
-                      span.className = 'logo-fallback font-black text-xs text-[#2b5c8f] tracking-tighter px-1';
+                      span.className = 'logo-fallback font-black text-[10px] text-[#2b5c8f] tracking-tighter px-1';
                       span.innerText = 'MARCOBRE';
                       parent.appendChild(span);
                     }
                   }}
-                  className="h-7 w-auto object-contain max-w-[110px]" 
+                  className="h-5 sm:h-6 w-auto object-contain max-w-[80px] sm:max-w-[110px]" 
                 />
               </div>
 
-              <div>
-                <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none text-white flex items-center gap-1.5">
+              <div className="truncate">
+                <h1 className="text-xs sm:text-base font-extrabold tracking-tight leading-none text-white truncate">
                   Marcobre <span className="text-[#fca5a5] font-light">| Puerto</span>
                 </h1>
-                <p className="text-[11px] text-blue-100 hidden sm:block mt-0.5">
-                  Gestión Portuaria de Tareas y Relevos 10x10
+                <p className="text-[9px] text-blue-200 hidden sm:block mt-0.5">
+                  Operaciones y Relevos 10x10
                 </p>
               </div>
             </div>
 
-            {/* SELECCIÓN DE GUARDIAS ACTIVAS (10x10) */}
-            <div className="flex items-center gap-2">
+            {/* ACCIONES COMPACTAS ADAPTABLES A PANTALLA MÓVIL */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Botón Guardias Activas (Compacto para no desbordar) */}
               <button
                 onClick={() => {
                   setG1Temp(guardiasActivas.guardia_1);
                   setG2Temp(guardiasActivas.guardia_2);
                   setModalGuardias(true);
                 }}
-                className="flex items-center gap-1.5 bg-[#1e4570] hover:bg-[#153252] text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold border border-blue-400/30 transition shadow-inner"
+                className="flex items-center gap-1 bg-[#1e4570] hover:bg-[#153252] text-white px-2 py-1 rounded-lg text-xs font-semibold border border-blue-400/30 transition shadow-inner"
                 title="Configurar Guardias Activas en Sitio"
               >
-                <Users className="w-4 h-4 text-amber-300" />
-                <span className="hidden md:inline font-normal text-blue-200">Guardias Activas:</span>
-                <span className="bg-amber-400 text-slate-900 font-bold px-1.5 py-0.5 rounded text-xs shadow-sm">
+                <Users className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden md:inline font-normal text-blue-200 text-[11px]">Guardias:</span>
+                <span className="bg-amber-400 text-slate-900 font-extrabold px-1.5 py-0.2 rounded text-[10px]">
                   {guardiasActivas.guardia_1} & {guardiasActivas.guardia_2}
                 </span>
               </button>
 
-              {/* Indicador de Conexión y Sync Offline */}
-              <div 
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border ${
-                  isOnline 
-                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
-                    : 'bg-rose-950/60 text-rose-300 border-rose-500/60 animate-pulse'
-                }`}
-                title={isOnline ? 'Conectado a Supabase en tiempo real' : 'Modo Offline activo (IndexedDB)'}
-              >
-                {isOnline ? (
-                  <>
-                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden lg:inline">{isSyncing ? 'Sincronizando...' : 'Online'}</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span className="hidden lg:inline">Offline</span>
-                  </>
-                )}
-              </div>
-
-              {/* Toggle Tema Claro / Oscuro */}
-              <button
-                onClick={toggleTheme}
-                aria-label="Alternar modo oscuro"
-                className="p-2 rounded-lg bg-[#1e4570] hover:bg-[#153252] text-amber-300 transition"
-                title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-blue-200" />}
-              </button>
-
-              {/* Botón de Instalación PWA (Android / iOS) */}
+              {/* Botón PWA Instalable */}
               <InstallPwaButton />
 
-              {/* Botón Exclusivo para el Administrador: Cambiar Contraseñas */}
-              {esAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setModalAdminPass(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 text-xs font-bold transition shadow-xs"
-                  title="Gestionar y cambiar contraseñas de usuarios"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Claves</span>
-                </button>
-              )}
+              {/* Menú Móvil Hamburger para herramientas secundarias */}
+              <button
+                type="button"
+                onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+                className="p-1.5 rounded-lg bg-[#1e4570] text-blue-200 hover:text-white sm:hidden border border-blue-400/20"
+                aria-label="Abrir opciones de usuario"
+              >
+                {menuMovilAbierto ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
 
-              {/* Perfil Usuario y Logout */}
-              {usuario && (
-                <div className="flex items-center gap-1.5 pl-1 border-l border-blue-400/20">
-                  <div className="hidden xl:flex flex-col text-right">
-                    <span className="text-xs font-semibold leading-tight text-white">{usuario.nombre_completo.split(' ')[0]}</span>
-                    <span className="text-[10px] text-blue-200 uppercase font-mono">Gda {usuario.guardia} • {usuario.area}</span>
-                  </div>
+              {/* Herramientas de Escritorio (Ocultas en celular para evitar desborde) */}
+              <div className="hidden sm:flex items-center gap-1.5">
+                {/* Conectividad */}
+                <div 
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium border ${
+                    isOnline 
+                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
+                      : 'bg-rose-950/60 text-rose-300 border-rose-500/60'
+                  }`}
+                >
+                  {isOnline ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-rose-400" />}
+                </div>
+
+                {/* Dark Mode */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded-lg bg-[#1e4570] hover:bg-[#153252] text-amber-300 transition"
+                  title="Tema claro/oscuro"
+                >
+                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5 text-blue-200" />}
+                </button>
+
+                {/* Claves Admin */}
+                {esAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setModalAdminPass(true)}
+                    className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs font-bold"
+                    title="Claves"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* Salir */}
+                {usuario && (
                   <button
                     onClick={() => logout()}
-                    className="p-2 rounded-lg bg-rose-900/40 hover:bg-rose-800 text-rose-200 transition"
-                    title="Cerrar Sesión"
+                    className="p-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-800 text-rose-200 transition"
+                    title="Cerrar sesión"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5" />
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Navegación Secundaria Mobile-First (Tabs y botón Crear Tarea) */}
-          <div className="flex items-center justify-between pb-2.5 pt-1 border-t border-blue-400/20 text-xs sm:text-sm">
-            <div className="flex items-center gap-1 sm:gap-2">
+          {/* MENÚ DESPLEGABLE MÓVIL (CUANDO SE TOCA HAMBURGER EN IPHONE/ANDROID) */}
+          {menuMovilAbierto && (
+            <div className="sm:hidden pb-3 pt-2 border-t border-blue-400/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-blue-100 text-[11px] truncate max-w-[140px]">
+                  {usuario?.nombre_completo.split(' ')[0]} (Gda {usuario?.guardia})
+                </span>
+                <div className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isOnline ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded bg-[#1e4570] text-amber-300"
+                  title="Tema claro/oscuro"
+                >
+                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                </button>
+
+                {esAdmin && (
+                  <button
+                    onClick={() => {
+                      setModalAdminPass(true);
+                      setMenuMovilAbierto(false);
+                    }}
+                    className="p-1.5 rounded bg-amber-500/20 text-amber-300 text-xs font-bold flex items-center gap-1"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Claves</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => logout()}
+                  className="p-1.5 rounded bg-rose-900/50 text-rose-200"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* NAVEGACIÓN SECUNDARIA COMPACTA MOBILE-FIRST */}
+          <div className="flex items-center justify-between pb-2 pt-1 border-t border-blue-400/20 text-xs gap-1">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setVistaActual('kanban')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   vistaActual === 'kanban'
-                    ? 'bg-white text-[#2b5c8f] shadow font-bold dark:bg-slate-800 dark:text-blue-300'
+                    ? 'bg-white text-[#2b5c8f] shadow dark:bg-slate-800 dark:text-blue-300'
                     : 'text-blue-100 hover:bg-white/10'
                 }`}
               >
-                <Kanban className="w-4 h-4" />
-                <span>Tablero Operativo</span>
+                <Kanban className="w-3.5 h-3.5" />
+                <span>Tablero</span>
               </button>
 
               <button
                 onClick={() => setVistaActual('archivo')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   vistaActual === 'archivo'
-                    ? 'bg-white text-[#2b5c8f] shadow font-bold dark:bg-slate-800 dark:text-blue-300'
+                    ? 'bg-white text-[#2b5c8f] shadow dark:bg-slate-800 dark:text-blue-300'
                     : 'text-blue-100 hover:bg-white/10'
                 }`}
               >
-                <Archive className="w-4 h-4" />
-                <span>Historial / Archivo</span>
+                <Archive className="w-3.5 h-3.5" />
+                <span>Historial</span>
               </button>
 
               <button
                 onClick={() => refreshTareas()}
-                className="p-1.5 text-blue-200 hover:text-white rounded hover:bg-white/10 transition"
-                title="Refrescar datos"
+                className="p-1 text-blue-200 hover:text-white rounded"
+                title="Refrescar"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
@@ -208,10 +252,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={onNuevaTarea}
-              className="bg-[#c13127] hover:bg-[#9e251e] text-white px-3 sm:px-4 py-1.5 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 active:scale-95"
+              className="bg-[#c13127] hover:bg-[#9e251e] text-white px-2.5 sm:px-3 py-1.5 rounded-lg font-extrabold shadow transition flex items-center gap-1 active:scale-95 text-xs shrink-0"
             >
-              <span className="text-base leading-none">+</span>
-              <span className="text-xs sm:text-sm">Nueva Tarea</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nueva Tarea</span>
             </button>
           </div>
         </div>
@@ -303,4 +347,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </>
   );
 };
-

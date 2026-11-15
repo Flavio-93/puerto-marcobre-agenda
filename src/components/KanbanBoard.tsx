@@ -73,73 +73,67 @@ export const KanbanBoard: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Barra de Filtros Rápidos de Campo (Mobile-First) */}
-      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-2.5 sm:p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-800 space-y-2.5 w-full overflow-hidden">
         {/* Selector Principal de Vistas: Mis Tareas Asignadas (Inicio) / General / Generadas por Mí */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full">
           <button
             type="button"
             onClick={() => setVistaTareas('mis_asignadas')}
-            className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'mis_asignadas'
-                ? 'bg-[#2b5c8f] text-white shadow-md'
+                ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <UserCheck className="w-4 h-4" />
-            <span>Mis Tareas por Hacer</span>
+            <UserCheck className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Por Hacer</span>
           </button>
 
           <button
             type="button"
             onClick={() => setVistaTareas('general')}
-            className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'general'
-                ? 'bg-[#2b5c8f] text-white shadow-md'
+                ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Globe className="w-4 h-4" />
-            <span>Todas las Tareas (General)</span>
+            <Globe className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">General</span>
           </button>
 
           <button
             type="button"
             onClick={() => setVistaTareas('mis_personales')}
-            className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+            className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 text-center ${
               vistaTareas === 'mis_personales'
-                ? 'bg-[#2b5c8f] text-white shadow-md'
+                ? 'bg-[#2b5c8f] text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Lock className="w-4 h-4 text-amber-400" />
-            <span>Generadas por Mí (Personal)</span>
+            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">Personal</span>
           </button>
         </div>
 
         {/* Sub-filtros e Indicadores */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={() => setFiltroGuardiaSoloActivas(!filtroGuardiaSoloActivas)}
-              className={`px-3 py-1.5 rounded-lg font-bold border transition flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg font-bold border transition flex items-center gap-1 text-[11px] ${
                 filtroGuardiaSoloActivas
                   ? 'bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Guardias Activas ({guardiasActivas.guardia_1} & {guardiasActivas.guardia_2})</span>
+              <Layers className="w-3 h-3" />
+              <span>Gdas Activas ({guardiasActivas.guardia_1} & {guardiasActivas.guardia_2})</span>
             </button>
-
-            <span className="text-slate-500 dark:text-slate-400 text-xs">
-              {vistaTareas === 'mis_asignadas' && 'Mostrando únicamente las actividades donde eres el supervisor responsable.'}
-              {vistaTareas === 'general' && 'Mostrando todas las tareas operativas activas en el puerto.'}
-              {vistaTareas === 'mis_personales' && 'Mostrando solo tus apuntes y tareas creadas de carácter personal.'}
-            </span>
           </div>
 
-          <div className="text-slate-500 dark:text-slate-400 font-semibold text-xs">
-            Mostrando: <strong className="text-[#2b5c8f] dark:text-blue-300">{tareasFiltradas.length}</strong> tareas
+          <div className="text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
+            Total: <strong className="text-[#2b5c8f] dark:text-blue-300">{tareasFiltradas.length}</strong>
           </div>
         </div>
       </div>
