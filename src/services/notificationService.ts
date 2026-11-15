@@ -76,6 +76,42 @@ export async function dispararNotificacionSistema(titulo: string, cuerpo: string
   }
 }
 
+// Enviar Push Remoto a través de la API Serverless de Vercel (despierta el celular con la app cerrada)
+export async function enviarPushRemoto({
+  asignado_a_id,
+  titulo,
+  creador_nombre,
+  mensaje,
+  tag,
+}: {
+  asignado_a_id: string;
+  titulo: string;
+  creador_nombre?: string;
+  mensaje?: string;
+  tag?: string;
+}) {
+  try {
+    const res = await fetch('/api/enviar-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        asignado_a_id,
+        titulo,
+        creador_nombre,
+        mensaje,
+        tag,
+      }),
+    });
+    const data = await res.json();
+    console.log('📡 [Push Remoto] Resultado envío push serverless:', data);
+    return data;
+  } catch (e) {
+    console.warn('Error llamando /api/enviar-push:', e);
+  }
+}
+
 // Registrar suscripción Push en la base de datos vinculada al usuario_id
 export async function registrarSuscripcionPush(usuarioId: string) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {

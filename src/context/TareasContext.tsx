@@ -10,7 +10,7 @@ import {
   removePendingSyncItem 
 } from '../services/indexedDb';
 import { notificarTeams } from '../services/teamsService';
-import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema } from '../services/notificationService';
+import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema, enviarPushRemoto } from '../services/notificationService';
 
 interface TareasContextType {
   tareas: Tarea[];
@@ -311,6 +311,16 @@ export const TareasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
     }
 
+    // DISPARO PUSH REMOTO (Para despertar el celular del asignado con app cerrada / pantalla bloqueada)
+    if (tareaCompleta.asignado_a_id && tareaCompleta.asignado_a_id !== usuario.id) {
+      enviarPushRemoto({
+        asignado_a_id: tareaCompleta.asignado_a_id,
+        titulo: tareaCompleta.titulo,
+        creador_nombre: usuario.nombre_completo,
+        tag: tareaCompleta.id,
+      });
+    }
+
     if (isSupabaseConfigured && navigator.onLine) {
       try {
         const { error } = await supabase.from('tareas').insert({
@@ -517,6 +527,16 @@ export const TareasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       asignadoNombre: nuevoAsignado?.nombre_completo || 'Sin Asignar',
       detallesRelevo: `Reasignado de ${asignadoAnterior?.nombre_completo || 'N/A'} a ${nuevoAsignado?.nombre_completo || 'N/A'}. Motivo: ${motivo.trim()}`
     });
+
+    // DISPARO PUSH REMOTO POR REASIGNACIÓN
+    if (nuevoAsignadoId && nuevoAsignadoId !== usuario.id) {
+      enviarPushRemoto({
+        asignado_a_id: nuevoAsignadoId,
+        titulo: tarea.titulo,
+        mensaje: `${usuario.nombre_completo} te ha transferido la tarea: "${tarea.titulo}"`,
+        tag: id,
+      });
+    }
 
     if (isSupabaseConfigured && navigator.onLine) {
       try {
