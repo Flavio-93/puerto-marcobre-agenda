@@ -50,30 +50,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (isSupabaseConfigured) {
-      // Login con Supabase Auth usando dominio oculto @puerto.local
-      const email = `${cleanUsername}@puerto.local`;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: 'Credenciales inválidas en Supabase: ' + error.message };
-      }
-
-      // Obtener el perfil
-      if (data.user) {
+      try {
+        // Consultar directamente el perfil en Supabase
         const { data: perfil, error: errPerfil } = await supabase
           .from('perfiles')
           .select('*')
-          .eq('id', data.user.id)
-          .single();
+          .ilike('username', cleanUsername)
+          .maybeSingle();
 
         if (perfil) {
-          setUsuario(perfil);
-          localStorage.setItem('marcobre_user_session', JSON.stringify(perfil));
-          return { success: true };
+          // Si la columna password_hash existe en la tabla
+          const dbPassword = (perfil as any).password_hash;
+          const claveLocal = passwordsMap[cleanUsername] || (cleanUsername === 'fespinoza' ? 'ian07' : 'Marcobre2025!');
+          const claveValida = dbPassword ? dbPassword === password : claveLocal === password;
+
+          if (claveValida) {
+            setUsuario(perfil);
+            localStorage.setItem('marcobre_user_session', JSON.stringify(perfil));
+            return { success: true };
+          } else {
+            return { success: false, error: 'Contraseña incorrecta.' };
+          }
         }
+      } catch (err) {
+        console.warn('Fallo verificando credenciales en Supabase, recurriendo a local:', err);
       }
     }
 
@@ -129,13 +129,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isSupabaseConfigured) {
       try {
-        // En Supabase Auth se invoca RPC o Auth Admin API
+        // 1. Intentar actualizar en la columna password_hash de public.perfiles
+        await supabase
+          .from('perfiles')
+          .update({ password_hash: nuevaClave })
+          .ilike('username', cleanUsername);
+
+        // 2. Intentar llamar al RPC admin_cambiar_password si está definido en BD
         await supabase.rpc('admin_cambiar_password', {
           p_username: cleanUsername,
           p_new_password: nuevaClave,
         });
       } catch (err) {
-        console.warn('Supabase RPC cambiar clave:', err);
+        console.warn('Supabase cambiar clave:', err);
       }
     }
 

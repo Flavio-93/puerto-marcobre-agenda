@@ -28,11 +28,12 @@ CREATE TYPE criticidad_tarea AS ENUM ('Baja', 'Media', 'Alta', 'Critica');
 CREATE TYPE estado_tarea AS ENUM ('Por Hacer', 'En Progreso', 'Completado', 'Cancelado');
 CREATE TYPE visibilidad_tarea AS ENUM ('Personal', 'General');
 
--- 5. TABLA DE PERFILES DE USUARIO (Vinculada a auth.users)
+-- 5. TABLA DE PERFILES DE USUARIO (Con columna de contraseña gestionable)
 CREATE TABLE public.perfiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE NOT NULL,
     nombre_completo VARCHAR(150) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL DEFAULT 'Marcobre2025!',
     rol rol_usuario NOT NULL,
     area VARCHAR(50) NOT NULL,
     guardia tipo_guardia NOT NULL,
@@ -154,6 +155,28 @@ CREATE TRIGGER trigger_bloqueo_delete_tareas
     EXECUTE FUNCTION trg_prevenir_delete_tareas();
 
 -- =========================================================================================
+-- FUNCIÓN RPC PARA CAMBIAR CONTRASEÑA DIRECTAMENTE DESDE LA APP
+-- =========================================================================================
+CREATE OR REPLACE FUNCTION admin_cambiar_password(
+    p_username TEXT,
+    p_new_password TEXT
+)
+RETURNS JSONB AS $$
+BEGIN
+    UPDATE public.perfiles
+    SET password_hash = p_new_password,
+        updated_at = NOW()
+    WHERE LOWER(username) = LOWER(p_username);
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Usuario no encontrado');
+    END IF;
+
+    RETURN jsonb_build_object('success', true, 'message', 'Contraseña actualizada correctamente');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =========================================================================================
 -- PERMISOS Y SEGURIDAD RLS
 -- =========================================================================================
 ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
@@ -173,6 +196,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- Políticas de acceso
 CREATE POLICY "Lectura perfiles" ON public.perfiles FOR SELECT TO public USING (true);
 CREATE POLICY "Modificar perfiles" ON public.perfiles FOR ALL TO public USING (true) WITH CHECK (true);
+GRANT EXECUTE ON FUNCTION admin_cambiar_password(TEXT, TEXT) TO anon, authenticated, service_role;
 
 CREATE POLICY "Lectura tareas" ON public.tareas FOR SELECT TO public USING (true);
 CREATE POLICY "Insertar tareas" ON public.tareas FOR INSERT TO public WITH CHECK (true);
@@ -210,43 +234,17 @@ CREATE OR REPLACE FUNCTION crear_usuario_semilla(
     p_area TEXT,
     p_guardia tipo_guardia,
     p_telefono TEXT DEFAULT NULL,
-    p_correo_teams TEXT DEFAULT NULL
+    p_correo_teams TEXT DEFAULT NULL,
+    p_password TEXT DEFAULT 'Marcobre2025!'
 )
 RETURNS VOID AS $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = p_id) THEN
-        INSERT INTO auth.users (
-            id,
-            instance_id,
-            email,
-            encrypted_password,
-            email_confirmed_at,
-            raw_app_meta_data,
-            raw_user_meta_data,
-            created_at,
-            updated_at,
-            role,
-            aud
-        ) VALUES (
-            p_id,
-            '00000000-0000-0000-0000-000000000000',
-            p_email,
-            crypt('Marcobre2025!', gen_salt('bf')),
-            NOW(),
-            '{"provider":"email","providers":["email"]}',
-            jsonb_build_object('nombre_completo', p_nombre, 'username', p_username, 'rol', p_rol, 'guardia', p_guardia),
-            NOW(),
-            NOW(),
-            'authenticated',
-            'authenticated'
-        );
-    END IF;
-
-    INSERT INTO public.perfiles (id, username, nombre_completo, rol, area, guardia, telefono, correo_teams, activo)
-    VALUES (p_id, p_username, p_nombre, p_rol, p_area, p_guardia, p_telefono, p_correo_teams, TRUE)
+    INSERT INTO public.perfiles (id, username, nombre_completo, password_hash, rol, area, guardia, telefono, correo_teams, activo)
+    VALUES (p_id, p_username, p_nombre, p_password, p_rol, p_area, p_guardia, p_telefono, p_correo_teams, TRUE)
     ON CONFLICT (id) DO UPDATE SET
         username = EXCLUDED.username,
         nombre_completo = EXCLUDED.nombre_completo,
+        password_hash = EXCLUDED.password_hash,
         rol = EXCLUDED.rol,
         area = EXCLUDED.area,
         guardia = EXCLUDED.guardia,
@@ -257,7 +255,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 1. Administrador General
-SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000000'::uuid, 'fespinoza', 'fespinoza@puerto.local', 'FLAVIO RUBEN ESPINOZA CHUMBIAUCA', 'superintendente', 'Superintendencia', 'Staff', '+51 987654300', 'flavio.espinoza@marcobre.com');
+SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000000'::uuid, 'fespinoza', 'fespinoza@puerto.local', 'FLAVIO RUBEN ESPINOZA CHUMBIAUCA', 'superintendente', 'Superintendencia', 'Staff', '+51 987654300', 'flavio.espinoza@marcobre.com', 'ian07');
 
 -- 2. Jefatura
 SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000001'::uuid, 'fpaolillo', 'fpaolillo@puerto.local', 'FRANCISCO JAVIER PAOLILLO TAPIA', 'superintendente', 'Superintendencia', 'Staff', '+51 987654301', 'francisco.paolillo@marcobre.com');
