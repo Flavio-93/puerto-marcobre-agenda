@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTareas } from '../context/TareasContext';
 import { Tarea } from '../types';
-import { reproducirAlarmaSonoraPersonal } from '../services/notificationService';
+import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema } from '../services/notificationService';
 import { Bell, X, AlertTriangle, Clock } from 'lucide-react';
 
 export const NotificationMonitor: React.FC = () => {
@@ -111,14 +111,12 @@ export const NotificationMonitor: React.FC = () => {
             mensaje: mensajeAviso,
           });
 
-          // Notificación Nativa del Sistema / Celular si está permitido
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('⚓ Alarma Personal Marcobre', {
-              body: `${t.titulo} - ${mensajeAviso}`,
-              icon: '/logo.png',
-              tag: t.id,
-            });
-          }
+          // Notificación Nativa del Sistema / Celular (suena o vibra incluso fuera de la app)
+          dispararNotificacionSistema(
+            '⚓ Alerta Personal - Puerto Marcobre',
+            `${t.titulo}: ${mensajeAviso}`,
+            t.id
+          );
 
           break; // Mostrar una alarma a la vez
         }

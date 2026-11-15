@@ -63,3 +63,80 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// =========================================================================
+// EVENTOS DE NOTIFICACIONES PUSH Y ALARMAS DE SISTEMA (MÓVILES)
+// =========================================================================
+
+// Escuchar mensaje del cliente para disparar notificación con vibración
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'TRIGGER_NOTIFICATION') {
+    const { title, body, tag } = event.data;
+    const options = {
+      body: body || 'Alerta operativa de Puerto Marcobre',
+      icon: '/logo.png',
+      badge: '/favicon.ico',
+      tag: tag || 'alerta-marcobre',
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [300, 100, 300, 100, 400],
+      data: {
+        url: self.location.origin
+      }
+    };
+    self.registration.showNotification(title || '⚓ Puerto Marcobre', options);
+  }
+});
+
+// Evento de Notificación Push del Servidor en Segundo Plano
+self.addEventListener('push', (event) => {
+  let data = {
+    title: '⚓ Puerto Marcobre - Alerta',
+    body: 'Tienes una tarea o relevo pendiente.',
+    tag: 'marcobre-alerta',
+  };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/logo.png',
+    badge: '/favicon.ico',
+    tag: data.tag || 'marcobre-tarea',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [300, 100, 300, 100, 400],
+    data: {
+      url: self.location.origin
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Al hacer clic en la notificación en el celular
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
