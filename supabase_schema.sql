@@ -1,44 +1,34 @@
 -- =========================================================================================
 -- SCRIPT DE LIMPIEZA TOTAL Y RECONSTRUCCIÓN - MARCOBRE PUERTO
--- Borra cualquier tabla, trigger o función anterior de la otra app y crea todo desde cero
+-- Compatible 100% con PostgreSQL / Supabase SQL Editor
 -- =========================================================================================
 
--- 1. DESACTIVAR PUBLICACIONES REALTIME PREVIAS
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.tareas;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.guardias_activas_config;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.historial_tareas;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.perfiles;
-EXCEPTION
-    WHEN OTHERS THEN NULL;
-END $$;
-
--- 2. ELIMINACIÓN EN CASCADA DE TABLAS ANTIGUAS
+-- 1. ELIMINACIÓN EN CASCADA DE TABLAS ANTIGUAS
 DROP TABLE IF EXISTS public.historial_tareas CASCADE;
 DROP TABLE IF EXISTS public.push_subscriptions CASCADE;
 DROP TABLE IF EXISTS public.guardias_activas_config CASCADE;
 DROP TABLE IF EXISTS public.tareas CASCADE;
 DROP TABLE IF EXISTS public.perfiles CASCADE;
 
--- 3. ELIMINACIÓN DE TIPOS / ENUMS ANTIGUOS
+-- 2. ELIMINACIÓN DE TIPOS / ENUMS ANTIGUOS
 DROP TYPE IF EXISTS rol_usuario CASCADE;
 DROP TYPE IF EXISTS tipo_guardia CASCADE;
 DROP TYPE IF EXISTS criticidad_tarea CASCADE;
 DROP TYPE IF EXISTS estado_tarea CASCADE;
 DROP TYPE IF EXISTS visibilidad_tarea CASCADE;
 
--- 4. HABILITAR EXTENSIONES CRÍTICAS
+-- 3. HABILITAR EXTENSIONES
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 5. CREACIÓN DE NUEVAS ENUMERACIONES MARCOBRE
+-- 4. CREACIÓN DE NUEVAS ENUMERACIONES MARCOBRE
 CREATE TYPE rol_usuario AS ENUM ('superintendente', 'jefe', 'supervisor_planta', 'supervisor_descarga');
 CREATE TYPE tipo_guardia AS ENUM ('A', 'B', 'C', 'D', 'Staff');
 CREATE TYPE criticidad_tarea AS ENUM ('Baja', 'Media', 'Alta', 'Critica');
 CREATE TYPE estado_tarea AS ENUM ('Por Hacer', 'En Progreso', 'Completado', 'Cancelado');
 CREATE TYPE visibilidad_tarea AS ENUM ('Personal', 'General');
 
--- 6. TABLA DE PERFILES DE USUARIO (Vinculada a auth.users)
+-- 5. TABLA DE PERFILES DE USUARIO (Vinculada a auth.users)
 CREATE TABLE public.perfiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -53,7 +43,7 @@ CREATE TABLE public.perfiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. TABLA DE TAREAS (Regla de Cero Eliminaciones)
+-- 6. TABLA DE TAREAS (Regla de Cero Eliminaciones)
 CREATE TABLE public.tareas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     codigo_tarea SERIAL,
@@ -78,7 +68,7 @@ CREATE TABLE public.tareas (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. TABLA DE HISTORIAL Y REASIGNACIONES (Audit Trail)
+-- 7. TABLA DE HISTORIAL Y REASIGNACIONES (Audit Trail)
 CREATE TABLE public.historial_tareas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tarea_id UUID NOT NULL REFERENCES public.tareas(id) ON DELETE CASCADE,
@@ -93,7 +83,7 @@ CREATE TABLE public.historial_tareas (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. TABLA DE SUSCRIPCIONES PUSH
+-- 8. TABLA DE SUSCRIPCIONES PUSH
 CREATE TABLE public.push_subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     usuario_id UUID NOT NULL REFERENCES public.perfiles(id) ON DELETE CASCADE,
@@ -105,7 +95,7 @@ CREATE TABLE public.push_subscriptions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 10. CONFIGURACIÓN DE GUARDIAS ACTIVAS (10x10)
+-- 9. CONFIGURACIÓN DE GUARDIAS ACTIVAS (10x10)
 CREATE TABLE public.guardias_activas_config (
     id INT PRIMARY KEY DEFAULT 1,
     guardia_1 tipo_guardia NOT NULL DEFAULT 'A',
@@ -180,24 +170,33 @@ RETURNS BOOLEAN AS $$
     );
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Políticas Perfiles
+-- Políticas de acceso
 CREATE POLICY "Lectura perfiles" ON public.perfiles FOR SELECT TO public USING (true);
 CREATE POLICY "Modificar perfiles" ON public.perfiles FOR ALL TO public USING (true) WITH CHECK (true);
 
--- Políticas Tareas (Acceso con clave anónima y autenticada)
 CREATE POLICY "Lectura tareas" ON public.tareas FOR SELECT TO public USING (true);
 CREATE POLICY "Insertar tareas" ON public.tareas FOR INSERT TO public WITH CHECK (true);
 CREATE POLICY "Actualizar tareas" ON public.tareas FOR UPDATE TO public USING (true);
 
--- Políticas Historial y Config
 CREATE POLICY "Acceso historial" ON public.historial_tareas FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso guardias" ON public.guardias_activas_config FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso push" ON public.push_subscriptions FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- HABILITAR REALTIME WEBSOCKETS EN SUPABASE
-ALTER PUBLICATION supabase_realtime ADD TABLE public.tareas;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.guardias_activas_config;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.historial_tareas;
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.tareas;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.guardias_activas_config;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.historial_tareas;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =========================================================================================
 -- SEED DATA - USUARIOS REALES MARCOBRE PUERTO
