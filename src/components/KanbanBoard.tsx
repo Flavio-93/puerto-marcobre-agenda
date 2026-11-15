@@ -182,54 +182,24 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Contenedor de Tareas / Tablero */}
+      {/* Contenedor de Tareas / Tablero (Scroll natural de pantalla completa) */}
       <div className="w-full">
-        <div className="rounded-2xl bg-white dark:bg-slate-900 p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-[500px]">
-          {/* Encabezado de la lista actual */}
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              {vistaTareas === 'completadas' ? (
-                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-950/60 rounded-lg text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              ) : (
-                <div className="p-1.5 bg-blue-50 dark:bg-blue-950/60 rounded-lg text-[#2b5c8f] dark:text-blue-400">
-                  <Clock className="w-4 h-4" />
-                </div>
+        {/* Lista de Tarjetas */}
+        <div className="space-y-3">
+          {tareasFiltradas.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col items-center justify-center text-slate-400 text-xs text-center">
+              <p className="font-semibold text-sm text-slate-600 dark:text-slate-300">No hay tareas en esta sección.</p>
+              {busqueda && (
+                <p className="text-[12px] text-slate-400 mt-1">
+                  Prueba cambiando el término de búsqueda.
+                </p>
               )}
-              <h2 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-white">
-                {vistaTareas === 'mis_asignadas' && 'Mis Tareas por Cumplir'}
-                {vistaTareas === 'general' && 'Todas las Tareas Activas'}
-                {vistaTareas === 'mis_personales' && 'Mis Tareas Personales'}
-                {vistaTareas === 'completadas' && 'Tareas Completadas en Turno'}
-              </h2>
             </div>
-            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-              vistaTareas === 'completadas' 
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
-                : 'bg-blue-100 text-[#2b5c8f] dark:bg-blue-950 dark:text-blue-300'
-            }`}>
-              {tareasFiltradas.length} {tareasFiltradas.length === 1 ? 'tarea' : 'tareas'}
-            </span>
-          </div>
-
-          {/* Lista de Tarjetas */}
-          <div className="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
-            {tareasFiltradas.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center">
-                <p className="font-medium">No hay tareas en esta sección.</p>
-                {busqueda && (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Prueba cambiando el término de búsqueda.
-                  </p>
-                )}
-              </div>
-            ) : (
-              tareasFiltradas.map((tarea) => (
-                <TaskCard key={tarea.id} tarea={tarea} />
-              ))
-            )}
-          </div>
+          ) : (
+            tareasFiltradas.map((tarea) => (
+              <TaskCard key={tarea.id} tarea={tarea} />
+            ))
+          )}
         </div>
       </div>
     </div>
