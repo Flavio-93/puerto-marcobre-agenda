@@ -136,23 +136,25 @@ export const TareasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setTareas(inicial);
       await cacheTareas(INITIAL_MOCK_TAREAS);
     }
-  }, [usuario, esJefatura]);
+  }, [usuario?.id, esJefatura]);
 
   useEffect(() => {
     loadTareas();
   }, [loadTareas]);
 
-  // Suscripción Supabase Realtime para WebSockets en vivo
+  // Suscripción Supabase Realtime para WebSockets en vivo + Polling de Respaldo silencioso
   useEffect(() => {
     if (!isSupabaseConfigured || !usuario) return;
 
+    // Canal único por sesión/usuario para evitar colisiones de canal en HMR o múltiples pestañas
+    const channelName = `realtime_tareas_${usuario.id}_${Date.now().toString(36)}`;
     const channel = supabase
-      .channel('realtime_tareas_board')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tareas' },
         (payload) => {
-          console.log('Cambio Realtime detectado en Tareas:', payload);
+          console.log('⚡ Cambio Realtime instantáneo en Tareas:', payload);
           loadTareas();
         }
       )
@@ -168,12 +170,31 @@ export const TareasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`📡 Estado conexión Realtime (${channelName}):`, status);
+      });
+
+    // Polling ligero de respaldo (cada 5 segundos) por si la conexión de red móvil entra en reposo
+    const backupInterval = setInterval(() => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        loadTareas();
+      }
+    }, 5000);
+
+    // Al volver a la app en celular (cuando se desbloquea o pasa a primer plano)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        loadTareas();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      clearInterval(backupInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
-  }, [usuario, loadTareas]);
+  }, [usuario?.id, loadTareas]);
 
   // Sincronizar cola pendiente acumulada en Offline
   const sincronizarPendientes = async () => {

@@ -155,28 +155,6 @@ CREATE TRIGGER trigger_bloqueo_delete_tareas
     EXECUTE FUNCTION trg_prevenir_delete_tareas();
 
 -- =========================================================================================
--- FUNCIÓN RPC PARA CAMBIAR CONTRASEÑA DIRECTAMENTE DESDE LA APP
--- =========================================================================================
-CREATE OR REPLACE FUNCTION admin_cambiar_password(
-    p_username TEXT,
-    p_new_password TEXT
-)
-RETURNS JSONB AS $$
-BEGIN
-    UPDATE public.perfiles
-    SET password_hash = p_new_password,
-        updated_at = NOW()
-    WHERE LOWER(username) = LOWER(p_username);
-
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Usuario no encontrado');
-    END IF;
-
-    RETURN jsonb_build_object('success', true, 'message', 'Contraseña actualizada correctamente');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- =========================================================================================
 -- PERMISOS Y SEGURIDAD RLS
 -- =========================================================================================
 ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
@@ -196,7 +174,6 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- Políticas de acceso
 CREATE POLICY "Lectura perfiles" ON public.perfiles FOR SELECT TO public USING (true);
 CREATE POLICY "Modificar perfiles" ON public.perfiles FOR ALL TO public USING (true) WITH CHECK (true);
-GRANT EXECUTE ON FUNCTION admin_cambiar_password(TEXT, TEXT) TO anon, authenticated, service_role;
 
 CREATE POLICY "Lectura tareas" ON public.tareas FOR SELECT TO public USING (true);
 CREATE POLICY "Insertar tareas" ON public.tareas FOR INSERT TO public WITH CHECK (true);
