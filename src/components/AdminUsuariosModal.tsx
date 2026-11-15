@@ -119,8 +119,8 @@ export const AdminUsuariosModal: React.FC<AdminUsuariosModalProps> = ({ isOpen, 
                 <option value="mcaceres">MANUEL ANTONIO CACERES FALCONI (Jefe de Puerto)</option>
               </optgroup>
               <optgroup label="Supervisores Guardia A:">
-                <option value="cnanfunay">CRONWEL VLADIMIR NANFUÑAY LORA (Gda A - Planta)</option>
-                <option value="jchuaman">JUAN CARLOS HUAMAN QUISPE (Gda A - Descarga)</option>
+                <option value="cnanfuñay">CRONWEL VLADIMIR NANFUÑAY LORA (Gda A - Planta)</option>
+                <option value="jhuaman">JUAN CARLOS HUAMAN QUISPE (Gda A - Descarga)</option>
               </optgroup>
               <optgroup label="Supervisores Guardia B:">
                 <option value="cmachuca">CESAR ARNALDO MACHUCA POLO (Gda B - Planta)</option>

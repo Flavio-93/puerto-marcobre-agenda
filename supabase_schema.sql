@@ -407,8 +407,8 @@ SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000001'::uuid, 'fpao
 SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000002'::uuid, 'mcaceres',  'mcaceres@puerto.local',  'MANUEL ANTONIO CACERES FALCONI',  'jefe',             'Jefatura',         'Staff', '+51 987654302', 'manuel.caceres@marcobre.com');
 
 -- Guardia A
-SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000003'::uuid, 'cnanfunay', 'cnanfunay@puerto.local', 'CRONWEL VLADIMIR NANFUÑAY LORA', 'supervisor_planta',   'Planta',   'A', '+51 987654303', 'cronwel.nanfunay@marcobre.com');
-SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000004'::uuid, 'jchuaman',  'jchuaman@puerto.local',  'JUAN CARLOS HUAMAN QUISPE',      'supervisor_descarga', 'Descarga', 'A', '+51 987654304', 'juan.huaman@marcobre.com');
+SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000003'::uuid, 'cnanfuñay', 'cnanfunay@puerto.local', 'CRONWEL VLADIMIR NANFUÑAY LORA', 'supervisor_planta',   'Planta',   'A', '+51 987654303', 'cronwel.nanfunay@marcobre.com');
+SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000004'::uuid, 'jhuaman',  'jhuaman@puerto.local',  'JUAN CARLOS HUAMAN QUISPE',      'supervisor_descarga', 'Descarga', 'A', '+51 987654304', 'juan.huaman@marcobre.com');
 
 -- Guardia B
 SELECT crear_usuario_semilla('a0000001-0000-0000-0000-000000000005'::uuid, 'cmachuca',  'cmachuca@puerto.local',  'CESAR ARNALDO MACHUCA POLO',     'supervisor_planta',   'Planta',   'B', '+51 987654305', 'cesar.machuca@marcobre.com');

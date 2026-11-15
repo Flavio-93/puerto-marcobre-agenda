@@ -59,7 +59,7 @@ export const SEED_USUARIOS: Perfil[] = [
   },
   {
     id: 'a0000001-0000-0000-0000-000000000003',
-    username: 'cnanfunay',
+    username: 'cnanfuñay',
     nombre_completo: 'CRONWEL VLADIMIR NANFUÑAY LORA',
     rol: 'supervisor_planta',
     area: 'Planta',
@@ -70,7 +70,7 @@ export const SEED_USUARIOS: Perfil[] = [
   },
   {
     id: 'a0000001-0000-0000-0000-000000000004',
-    username: 'jchuaman',
+    username: 'jhuaman',
     nombre_completo: 'JUAN CARLOS HUAMAN QUISPE',
     rol: 'supervisor_descarga',
     area: 'Descarga',
