@@ -83,12 +83,14 @@ export async function enviarPushRemoto({
   creador_nombre,
   mensaje,
   tag,
+  es_vencida,
 }: {
   asignado_a_id: string;
   titulo: string;
   creador_nombre?: string;
   mensaje?: string;
   tag?: string;
+  es_vencida?: boolean;
 }) {
   try {
     const res = await fetch('/api/enviar-push', {
@@ -102,6 +104,7 @@ export async function enviarPushRemoto({
         creador_nombre,
         mensaje,
         tag,
+        es_vencida,
       }),
     });
     const data = await res.json();

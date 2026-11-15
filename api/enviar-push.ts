@@ -22,7 +22,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { asignado_a_id, titulo, creador_nombre, mensaje, tag } = req.body || {};
+    const { asignado_a_id, titulo, creador_nombre, mensaje, tag, es_vencida } = req.body || {};
 
     if (!asignado_a_id) {
       return res.status(400).json({ error: 'Falta asignado_a_id' });
@@ -38,11 +38,20 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, count: 0, message: 'Usuario no tiene suscripciones push activas' });
     }
 
-    // 2. Construir el paquete de notificación con vibración y sonido
+    // 2. Título y Cuerpo según tipo de evento (Asignación o Vencimiento)
+    const notificationTitle = es_vencida 
+      ? '⚠️ Plazo Vencido - Puerto Marcobre' 
+      : '⚓ Tarea Asignada - Puerto Marcobre';
+
+    const defaultBody = es_vencida
+      ? `La tarea "${titulo}" ha cumplido su fecha límite en tu guardia.`
+      : (creador_nombre ? `${creador_nombre} te ha asignado: "${titulo}"` : `Nueva tarea asignada: "${titulo}"`);
+
+    // Construir el paquete de notificación con vibración y sonido
     const payload = JSON.stringify({
-      title: '⚓ Puerto Marcobre - Tarea Asignada',
-      body: mensaje || (creador_nombre ? `${creador_nombre} te ha asignado: "${titulo}"` : `Nueva tarea asignada: "${titulo}"`),
-      tag: tag || 'alerta-marcobre',
+      title: notificationTitle,
+      body: mensaje || defaultBody,
+      tag: tag || (es_vencida ? `vencida-${titulo}` : 'alerta-marcobre'),
       data: {
         url: '/'
       }
@@ -77,3 +86,4 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: err.message || 'Error interno enviando push' });
   }
 }
+

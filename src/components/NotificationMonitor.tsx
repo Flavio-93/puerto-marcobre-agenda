@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTareas } from '../context/TareasContext';
 import { Tarea } from '../types';
-import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema, registrarSuscripcionPush } from '../services/notificationService';
+import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema, registrarSuscripcionPush, enviarPushRemoto } from '../services/notificationService';
 import { Bell, X, AlertTriangle, Clock } from 'lucide-react';
 
 export const NotificationMonitor: React.FC = () => {
@@ -157,10 +157,21 @@ export const NotificationMonitor: React.FC = () => {
 
           // Notificación Nativa del Sistema / Celular (suena o vibra incluso fuera de la app)
           dispararNotificacionSistema(
-            '⚓ Alerta de Tarea - Puerto Marcobre',
+            diffMin < 0 ? '⚠️ Plazo Vencido - Puerto Marcobre' : '⚓ Alerta de Tarea - Puerto Marcobre',
             `${t.titulo}: ${mensajeAviso}`,
             alertKey
           );
+
+          // Si la tarea venció, enviar Push Remoto al servidor para despertar el celular si está bloqueado
+          if (diffMin < 0 && t.asignado_a_id) {
+            enviarPushRemoto({
+              asignado_a_id: t.asignado_a_id,
+              titulo: t.titulo,
+              mensaje: `La tarea "${t.titulo}" ha vencido sin completarse en tu guardia.`,
+              tag: alertKey,
+              es_vencida: true,
+            });
+          }
 
           break; // Mostrar una alarma a la vez
         }
