@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTareas } from '../context/TareasContext';
 import { Tarea } from '../types';
-import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema } from '../services/notificationService';
+import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema, registrarSuscripcionPush } from '../services/notificationService';
 import { Bell, X, AlertTriangle, Clock } from 'lucide-react';
 
 export const NotificationMonitor: React.FC = () => {
@@ -26,6 +26,9 @@ export const NotificationMonitor: React.FC = () => {
       const perm = await Notification.requestPermission();
       setPermisoNotificaciones(perm);
       if (perm === 'granted') {
+        if (usuario?.id) {
+          await registrarSuscripcionPush(usuario.id);
+        }
         reproducirAlarmaSonoraPersonal();
         dispararNotificacionSistema(
           '🔔 Notificaciones Activadas - Puerto Marcobre',
@@ -34,6 +37,13 @@ export const NotificationMonitor: React.FC = () => {
       }
     }
   };
+
+  // Si ya tiene permiso concedido, asegurar registro de suscripción en segundo plano
+  useEffect(() => {
+    if (permisoNotificaciones === 'granted' && usuario?.id) {
+      registrarSuscripcionPush(usuario.id);
+    }
+  }, [permisoNotificaciones, usuario?.id]);
 
   useEffect(() => {
     if (!usuario) return;
