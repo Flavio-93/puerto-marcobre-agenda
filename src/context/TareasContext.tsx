@@ -10,6 +10,7 @@ import {
   removePendingSyncItem 
 } from '../services/indexedDb';
 import { notificarTeams } from '../services/teamsService';
+import { reproducirAlarmaSonoraPersonal, dispararNotificacionSistema } from '../services/notificationService';
 
 interface TareasContextType {
   tareas: Tarea[];
@@ -153,8 +154,35 @@ export const TareasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tareas' },
-        (payload) => {
+        (payload: any) => {
           console.log('⚡ Cambio Realtime instantáneo en Tareas:', payload);
+          
+          // NOTIFICACIÓN INMEDIATA AL ASIGNADO CUANDO SE LE ASIGNA O CREA UNA NUEVA TAREA
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const nueva = payload.new;
+            // Solo si la tarea recién creada ha sido asignada a este usuario
+            if (nueva.asignado_a_id === usuario.id && nueva.creador_id !== usuario.id) {
+              const creadorNom = SEED_USUARIOS.find((u) => u.id === nueva.creador_id)?.nombre_completo || 'Un supervisor';
+              reproducirAlarmaSonoraPersonal();
+              dispararNotificacionSistema(
+                '⚓ ¡Nueva Tarea Asignada! - Puerto Marcobre',
+                `${creadorNom} te ha asignado la tarea: "${nueva.titulo}"`,
+                nueva.id
+              );
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const actualizada = payload.new;
+            // Si la tarea fue reasignada a este usuario
+            if (actualizada.asignado_a_id === usuario.id && payload.old?.asignado_a_id !== usuario.id) {
+              reproducirAlarmaSonoraPersonal();
+              dispararNotificacionSistema(
+                '⚓ ¡Tarea Reasignada a Ti! - Puerto Marcobre',
+                `Se te ha transferido la tarea: "${actualizada.titulo}"`,
+                actualizada.id
+              );
+            }
+          }
+
           loadTareas();
         }
       )

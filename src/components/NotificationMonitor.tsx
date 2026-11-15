@@ -15,6 +15,25 @@ export const NotificationMonitor: React.FC = () => {
   } | null>(null);
 
   const [alertasNotificadas, setAlertasNotificadas] = useState<Set<string>>(() => new Set());
+  const [permisoNotificaciones, setPermisoNotificaciones] = useState<NotificationPermission>(() => {
+    if ('Notification' in window) return Notification.permission;
+    return 'default';
+  });
+
+  // Solicitar permiso de Notificaciones al usuario
+  const pedirPermisoNotificaciones = async () => {
+    if ('Notification' in window) {
+      const perm = await Notification.requestPermission();
+      setPermisoNotificaciones(perm);
+      if (perm === 'granted') {
+        reproducirAlarmaSonoraPersonal();
+        dispararNotificacionSistema(
+          '🔔 Notificaciones Activadas - Puerto Marcobre',
+          'Recibirás sonido y vibración en tu celular cuando se te asigne una tarea o venza un plazo.'
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     if (!usuario) return;
@@ -126,49 +145,82 @@ export const NotificationMonitor: React.FC = () => {
     return () => clearInterval(interval);
   }, [usuario, tareas, alertasNotificadas]);
 
-  if (!alarmaActiva) return null;
-
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-md w-full p-4 bg-white dark:bg-slate-900 border-2 border-rose-500 rounded-2xl shadow-2xl animate-bounce-once text-slate-800 dark:text-slate-100 flex items-start gap-3">
-      <div className="p-3 bg-rose-100 dark:bg-rose-950 text-rose-600 rounded-xl animate-pulse shrink-0">
-        <Bell className="w-6 h-6" />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-1 mb-1">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Alerta Personal para Ti
-          </span>
-          <button
-            onClick={() => setAlarmaActiva(null)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <>
+      {/* Banner flotante para activar notificaciones de celular si aún no están permitidas */}
+      {permisoNotificaciones === 'default' && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[92%] p-3 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-xl shadow-xl flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 rounded-lg shrink-0">
+              <Bell className="w-4 h-4" />
+            </span>
+            <span className="text-slate-700 dark:text-slate-200 text-[11px] font-medium leading-tight">
+              ¿Activar sonido y vibración en este celular para tus tareas?
+            </span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={pedirPermisoNotificaciones}
+              className="px-2.5 py-1 bg-[#2b5c8f] hover:bg-[#1e4570] text-white font-bold rounded-lg text-[11px] shadow-xs"
+            >
+              Activar
+            </button>
+            <button
+              type="button"
+              onClick={() => setPermisoNotificaciones('denied')}
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
+      )}
 
-        <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
-          {alarmaActiva.tarea.titulo}
-        </h4>
-        <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-          {alarmaActiva.mensaje}
-        </p>
+      {/* Banner de Alerta Personal cuando suena */}
+      {alarmaActiva && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md w-full p-4 bg-white dark:bg-slate-900 border-2 border-rose-500 rounded-2xl shadow-2xl animate-bounce-once text-slate-800 dark:text-slate-100 flex items-start gap-3">
+          <div className="p-3 bg-rose-100 dark:bg-rose-950 text-rose-600 rounded-xl animate-pulse shrink-0">
+            <Bell className="w-6 h-6" />
+          </div>
 
-        <div className="mt-2 flex items-center justify-between text-[11px]">
-          <span className="font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-amber-500" />
-            {alarmaActiva.tarea.frecuencia_notificacion}
-          </span>
-          <button
-            onClick={() => setAlarmaActiva(null)}
-            className="px-3 py-1 bg-[#2b5c8f] hover:bg-[#1e4570] text-white font-bold rounded-lg text-xs"
-          >
-            Entendido
-          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Alerta Personal para Ti
+              </span>
+              <button
+                onClick={() => setAlarmaActiva(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
+              {alarmaActiva.tarea.titulo}
+            </h4>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+              {alarmaActiva.mensaje}
+            </p>
+
+            <div className="mt-2 flex items-center justify-between text-[11px]">
+              <span className="font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-500" />
+                {alarmaActiva.tarea.frecuencia_notificacion}
+              </span>
+              <button
+                onClick={() => setAlarmaActiva(null)}
+                className="px-3 py-1 bg-[#2b5c8f] hover:bg-[#1e4570] text-white font-bold rounded-lg text-xs"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
