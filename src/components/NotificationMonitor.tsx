@@ -14,7 +14,15 @@ export const NotificationMonitor: React.FC = () => {
     mensaje: string;
   } | null>(null);
 
-  const [alertasNotificadas, setAlertasNotificadas] = useState<Set<string>>(() => new Set());
+  const [alertasNotificadas, setAlertasNotificadas] = useState<Set<string>>(() => {
+    const saved = sessionStorage.getItem('marcobre_alertas_notificadas');
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved));
+      } catch (e) {}
+    }
+    return new Set();
+  });
   const [permisoNotificaciones, setPermisoNotificaciones] = useState<NotificationPermission>(() => {
     if ('Notification' in window) return Notification.permission;
     return 'default';
@@ -121,18 +129,25 @@ export const NotificationMonitor: React.FC = () => {
             break;
         }
 
-        // Si la tarea ya venció y está sin completar
+        // Si la tarea ya venció y está sin completar: solo alertar una única vez
         if (diffMin < 0) {
           seCumple = true;
           mensajeAviso = '⚠️ Esta tarea tiene el plazo de guardia vencido.';
         }
 
-        const alertKey = `${t.id}-${t.frecuencia_notificacion}-${Math.floor(ahora / (60000 * 5))}`;
+        // Llave de control permanente para que NUNCA se repita en bucle
+        const alertKey = diffMin < 0 
+          ? `vencida-${t.id}` 
+          : `${t.id}-${t.frecuencia_notificacion}`;
 
         if (seCumple && !alertasNotificadas.has(alertKey)) {
-          setAlertasNotificadas((prev) => new Set(prev).add(alertKey));
+          setAlertasNotificadas((prev) => {
+            const next = new Set(prev).add(alertKey);
+            sessionStorage.setItem('marcobre_alertas_notificadas', JSON.stringify(Array.from(next)));
+            return next;
+          });
 
-          // FILTRO PERSONAL: Reproducir sonido y mostrar banner SOLO para el asignado
+          // FILTRO PERSONAL: Reproducir sonido y mostrar banner SOLO una vez para el asignado
           reproducirAlarmaSonoraPersonal();
 
           setAlarmaActiva({
@@ -142,9 +157,9 @@ export const NotificationMonitor: React.FC = () => {
 
           // Notificación Nativa del Sistema / Celular (suena o vibra incluso fuera de la app)
           dispararNotificacionSistema(
-            '⚓ Alerta Personal - Puerto Marcobre',
+            '⚓ Alerta de Tarea - Puerto Marcobre',
             `${t.titulo}: ${mensajeAviso}`,
-            t.id
+            alertKey
           );
 
           break; // Mostrar una alarma a la vez
