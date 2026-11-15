@@ -26,6 +26,24 @@ export const NuevaTareaModal: React.FC<NuevaTareaModalProps> = ({ isOpen, onClos
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const resetFormulario = () => {
+    setTitulo('');
+    setDescripcion('');
+    setAsignadoAId(usuario?.id || '');
+    setGuardiaObjetivo(guardiasActivas.guardia_1);
+    setCriticidad('Media');
+    setVisibilidad('General');
+    setFrecuenciaNotificacion('1 hora antes');
+    setEtiquetasInput('Mecánico, Operativo');
+    setFechaLimite('');
+    setError(null);
+  };
+
+  const handleCerrar = () => {
+    resetFormulario();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   // Si es supervisor, solo puede asignar a otros supervisores (no a Jefatura ni Superintendencia)
@@ -72,6 +90,8 @@ export const NuevaTareaModal: React.FC<NuevaTareaModalProps> = ({ isOpen, onClos
         fecha_limite: fechaLimite ? new Date(fechaLimite).toISOString() : null,
       });
 
+      // Limpiar formulario inmediatamente para la próxima tarea
+      resetFormulario();
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Error al crear tarea.');
@@ -98,7 +118,7 @@ export const NuevaTareaModal: React.FC<NuevaTareaModalProps> = ({ isOpen, onClos
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCerrar}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="w-6 h-6" />
